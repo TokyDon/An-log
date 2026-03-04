@@ -128,19 +128,24 @@ export function AnimonCard({ animon, onPress, compact = false }: AnimonCardProps
 
   if (animon.rarity === 'glossy') {
     return (
-      <Animated.View style={[styles.glossyWrapper, shimmerStyle]}>
-        <LinearGradient
-          colors={['#FFD700', '#FFA500', '#FFD700', '#FFFACD']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.glossyGradient, compact && styles.glossyGradientCompact]}
-        >
-          {/* Reset opacity for inner card */}
-          <Animated.View style={styles.glossyInner}>
-            {innerCard}
+      <View style={[styles.glossyOuter, compact && styles.glossyOuterCompact]}>
+        {/* Overflow-hidden container clips gradient to border radius */}
+        <View style={[styles.glossyBorder, compact && styles.glossyBorderCompact]}>
+          {/* Shimmering gradient fills behind the card as an absolute layer */}
+          <Animated.View style={[StyleSheet.absoluteFill, shimmerStyle]}>
+            <LinearGradient
+              colors={['#FFD700', '#FFA500', '#FFD700', '#FFFACD']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
           </Animated.View>
-        </LinearGradient>
-      </Animated.View>
+          {/* Card content — normal flow sibling, sits on top unaffected by shimmer */}
+          <View style={styles.glossyInner}>
+            {innerCard}
+          </View>
+        </View>
+      </View>
     );
   }
 
@@ -220,8 +225,8 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginLeft: 6,
   },
-  // Glossy wrapper
-  glossyWrapper: {
+  // Glossy wrapper — two-layer: outer carries shadow, inner clips gradient
+  glossyOuter: {
     borderRadius: 18,
     shadowColor: colors.rarity.glossy,
     shadowOffset: { width: 0, height: 4 },
@@ -229,14 +234,18 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 6,
   },
-  glossyGradient: {
-    borderRadius: 18,
-    padding: 2.5,
-  },
-  glossyGradientCompact: {
+  glossyOuterCompact: {
     borderRadius: 14,
   },
+  glossyBorder: {
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+  glossyBorderCompact: {
+    borderRadius: 14,
+  },
+  // 2.5 px margin exposes the gradient border around the card content
   glossyInner: {
-    opacity: 1,
+    margin: 2.5,
   },
 });

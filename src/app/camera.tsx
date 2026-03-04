@@ -11,7 +11,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Animated as RNAnimated,
   Dimensions,
   StatusBar,
 } from 'react-native';
