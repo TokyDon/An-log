@@ -1,7 +1,8 @@
 /**
  * RarityBadge
  *
- * Displays an Anímon's rarity tier. Glossy gets a shimmer animation (TODO).
+ * Pill component showing rarity tier with colour coding.
+ * Supports sm / md / lg sizes.
  */
 
 import React from 'react';
@@ -19,12 +20,27 @@ const RARITY_LABELS: Record<AnimonRarity, string> = {
 
 interface RarityBadgeProps {
   rarity: AnimonRarity;
+  size?: 'sm' | 'md' | 'lg';
 }
 
-export function RarityBadge({ rarity }: RarityBadgeProps) {
+export function RarityBadge({ rarity, size = 'md' }: RarityBadgeProps) {
   return (
-    <View style={[styles.badge, { backgroundColor: rarityBg(rarity) }]}>
-      <Text style={[styles.label, { color: rarityText(rarity) }]}>
+    <View
+      style={[
+        styles.badge,
+        { backgroundColor: rarityBg(rarity), borderColor: colors.rarity[rarity] },
+        size === 'sm' && styles.badgeSm,
+        size === 'lg' && styles.badgeLg,
+      ]}
+    >
+      <Text
+        style={[
+          styles.label,
+          { color: rarityText(rarity) },
+          size === 'sm' && styles.labelSm,
+          size === 'lg' && styles.labelLg,
+        ]}
+      >
         {RARITY_LABELS[rarity]}
       </Text>
     </View>
@@ -33,10 +49,10 @@ export function RarityBadge({ rarity }: RarityBadgeProps) {
 
 function rarityBg(rarity: AnimonRarity): string {
   switch (rarity) {
-    case 'glossy': return '#FFF8DC';
-    case 'rare': return '#EFF6FF';
+    case 'glossy':   return '#FFFBEB';
+    case 'rare':     return '#EFF6FF';
     case 'uncommon': return '#ECFDF5';
-    default: return '#F3F4F6';
+    default:         return '#F3F4F6';
   }
 }
 
@@ -46,12 +62,31 @@ function rarityText(rarity: AnimonRarity): string {
 
 const styles = StyleSheet.create({
   badge: {
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+  },
+  badgeSm: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
     borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+  },
+  badgeLg: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 24,
   },
   label: {
-    fontFamily: typography.fontFamily.bodyMedium,
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: typography.fontSize.sm,
+    letterSpacing: 0.3,
+  },
+  labelSm: {
     fontSize: typography.fontSize.xs,
+  },
+  labelLg: {
+    fontSize: typography.fontSize.base,
   },
 });

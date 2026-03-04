@@ -1,14 +1,24 @@
 /**
  * AnimonCard
  *
- * Core collectible card component. Displays an Anímon's photo, species name,
- * type tags, rarity badge, and region.
+ * Core collectible card component. Two modes:
+ *   compact=false  Full card — 16:9 image top, info below
+ *   compact=true   Horizontal mini card — 80×80 thumbnail + text right
  *
- * Glossy rarity cards get an animated iridescent gradient border.
+ * Glossy rarity cards get an animated LinearGradient shimmer border.
  */
 
-import React from 'react';
-import { View, Text, Image, StyleSheet, Pressable } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { colors } from '../../constants/colors';
 import { typography } from '../../constants/typography';
 import { TypeTagChip } from './TypeTagChip';
@@ -22,19 +32,62 @@ interface AnimonCardProps {
 }
 
 export function AnimonCard({ animon, onPress, compact = false }: AnimonCardProps) {
-  return (
-    <Pressable
-      onPress={() => onPress?.(animon)}
-      style={({ pressed }) => [
-        styles.card,
-        pressed && styles.pressed,
-        animon.rarity === 'glossy' && styles.glossyCard,
-      ]}
-    >
+  const shimmer = useSharedValue(0.6);
+
+  useEffect(() => {
+    if (animon.rarity === 'glossy') {
+      shimmer.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: 900 }),
+          withTiming(0.55, { duration: 900 }),
+        ),
+        -1,
+        false,
+      );
+    }
+  }, [animon.rarity]);
+
+  const shimmerStyle = useAnimatedStyle(() => ({
+    opacity: shimmer.value,
+  }));
+
+  const cardContent = compact ? (
+    <View style={styles.compactInner}>
       <Image
         source={{ uri: animon.photoUrl }}
-        style={compact ? styles.imageCompact : styles.image}
-        resizeMode="cover"
+        style={styles.imageCompact}
+        contentFit="cover"
+        transition={200}
+      />
+      <View style={styles.compactInfo}>
+        <Text style={styles.species} numberOfLines={1}>
+          {animon.species}
+        </Text>
+        {animon.breed && (
+          <Text style={styles.breed} numberOfLines={1}>
+            {animon.breed}
+          </Text>
+        )}
+        <View style={styles.tags}>
+          {animon.types.slice(0, 2).map((type) => (
+            <TypeTagChip key={type} type={type} size="sm" />
+          ))}
+        </View>
+        <View style={styles.footer}>
+          <RarityBadge rarity={animon.rarity} size="sm" />
+          <Text style={styles.region} numberOfLines={1}>
+            {animon.region}
+          </Text>
+        </View>
+      </View>
+    </View>
+  ) : (
+    <>
+      <Image
+        source={{ uri: animon.photoUrl }}
+        style={styles.image}
+        contentFit="cover"
+        transition={200}
       />
       <View style={styles.info}>
         <Text style={styles.species} numberOfLines={1}>
@@ -51,14 +104,47 @@ export function AnimonCard({ animon, onPress, compact = false }: AnimonCardProps
           ))}
         </View>
         <View style={styles.footer}>
-          <RarityBadge rarity={animon.rarity} />
+          <RarityBadge rarity={animon.rarity} size="sm" />
           <Text style={styles.region} numberOfLines={1}>
-            {animon.region}
+            📍 {animon.region}
           </Text>
         </View>
       </View>
+    </>
+  );
+
+  const innerCard = (
+    <Pressable
+      onPress={() => onPress?.(animon)}
+      style={({ pressed }) => [
+        styles.card,
+        compact && styles.cardCompact,
+        pressed && styles.pressed,
+      ]}
+    >
+      {cardContent}
     </Pressable>
   );
+
+  if (animon.rarity === 'glossy') {
+    return (
+      <Animated.View style={[styles.glossyWrapper, shimmerStyle]}>
+        <LinearGradient
+          colors={['#FFD700', '#FFA500', '#FFD700', '#FFFACD']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.glossyGradient, compact && styles.glossyGradientCompact]}
+        >
+          {/* Reset opacity for inner card */}
+          <Animated.View style={styles.glossyInner}>
+            {innerCard}
+          </Animated.View>
+        </LinearGradient>
+      </Animated.View>
+    );
+  }
+
+  return innerCard;
 }
 
 const styles = StyleSheet.create({
@@ -72,46 +158,59 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  glossyCard: {
-    borderWidth: 2,
-    borderColor: colors.rarity.glossy,
+  cardCompact: {
+    borderRadius: 12,
   },
   pressed: {
     opacity: 0.92,
     transform: [{ scale: 0.98 }],
   },
+  // Full card image — 16:9
   image: {
     width: '100%',
-    aspectRatio: 1,
+    aspectRatio: 16 / 9,
+  },
+  // Compact card
+  compactInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   imageCompact: {
-    width: '100%',
-    height: 120,
+    width: 80,
+    height: 80,
   },
+  compactInfo: {
+    flex: 1,
+    padding: 10,
+    justifyContent: 'center',
+    gap: 4,
+  },
+  // Shared info
   info: {
     padding: 12,
+    gap: 6,
   },
   species: {
     fontFamily: typography.fontFamily.heading,
     fontSize: typography.fontSize.md,
     color: colors.text.primary,
+    lineHeight: typography.fontSize.md * 1.2,
   },
   breed: {
     fontFamily: typography.fontFamily.body,
     fontSize: typography.fontSize.sm,
     color: colors.text.secondary,
-    marginTop: 2,
   },
   tags: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 4,
-    marginTop: 8,
   },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: 2,
   },
   region: {
     fontFamily: typography.fontFamily.body,
@@ -119,6 +218,25 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     flex: 1,
     textAlign: 'right',
-    marginLeft: 8,
+    marginLeft: 6,
+  },
+  // Glossy wrapper
+  glossyWrapper: {
+    borderRadius: 18,
+    shadowColor: colors.rarity.glossy,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  glossyGradient: {
+    borderRadius: 18,
+    padding: 2.5,
+  },
+  glossyGradientCompact: {
+    borderRadius: 14,
+  },
+  glossyInner: {
+    opacity: 1,
   },
 });
