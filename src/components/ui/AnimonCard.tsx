@@ -1,16 +1,23 @@
-/**
- * AnimonCard
+﻿/**
+ * AnimonCard â€” Field Naturalist Edition v2
  *
- * Skeuomorphic collectible card — BioField Scanner MK-II design language.
- * Two modes:
- *   compact=false  Full grid card — fixed 210px total height
- *   compact=true   Horizontal index-card carousel — FIXED 140px height
+ * SIGNATURE ELEMENT: The "Typed Specimen Label Strip" at the base of every card.
+ * Modelled on museum herbarium sheet labels â€” specimen name in Space Mono italic,
+ * accession number right-aligned, type chips + region code below.
  *
- * Glossy rarity cards get an animated LinearGradient shimmer border.
+ * Two variants:
+ *   compact=false  Full grid card â€” 210px total, 65% image / 35% label strip
+ *   compact=true   Horizontal carousel â€” 140px height, image left / data right
+ *
+ * Border treatment replaces floating shadows (card stock feel, not floating plastic):
+ *   common   â†’ 1px inkRule
+ *   uncommon â†’ 1.5px forestMid
+ *   rare     â†’ 1px cobalt (double-rule via wrapper)
+ *   glossy   â†’ animated LinearGradient shimmer border
  */
 
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -24,15 +31,32 @@ import { colors } from '../../constants/colors';
 import { typography } from '../../constants/typography';
 import { TypeTagChip } from './TypeTagChip';
 import { RarityBadge } from './RarityBadge';
-import { TYPE_DEFINITIONS } from '../../constants/typeSystem';
 import type { Animon } from '../../types/animon';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+import type { AnimonRarity } from '../../types/animon';
 
 interface AnimonCardProps {
   animon: Animon;
   onPress?: (animon: Animon) => void;
   compact?: boolean;
+}
+
+/** Format animon.id as accession number: #-042 */
+function accessionNumber(id: string): string {
+  const n = parseInt(id, 10);
+  if (!isNaN(n)) return `#-${String(n).padStart(3, '0')}`;
+  return `#-${id.slice(-3).padStart(3, '0')}`;
+}
+
+/** Outer border style by rarity (non-glossy, non-rare) */
+function outerBorderStyle(rarity: AnimonRarity): object {
+  switch (rarity) {
+    case 'uncommon':
+      return { borderWidth: 1.5, borderColor: colors.forestMid };
+    case 'rare':
+      return { borderWidth: 1, borderColor: colors.rarity.rare };
+    default:
+      return { borderWidth: 1, borderColor: colors.inkRule };
+  }
 }
 
 export function AnimonCard({ animon, onPress, compact = false }: AnimonCardProps) {
@@ -49,113 +73,178 @@ export function AnimonCard({ animon, onPress, compact = false }: AnimonCardProps
         false,
       );
     }
-  }, [animon.rarity]);
+  }, [animon.rarity, shimmer]);
 
   const shimmerStyle = useAnimatedStyle(() => ({
     opacity: shimmer.value,
   }));
 
-  // Type tint colour for image footer
-  const primaryTypeDef = animon.types[0] ? TYPE_DEFINITIONS[animon.types[0]] : null;
+  const accession = accessionNumber(animon.id);
 
-  const cardContent = compact ? (
-    <View style={styles.compactInner}>
-      <Image
-        source={{ uri: animon.photoUrl }}
-        style={styles.imageCompact}
-        contentFit="cover"
-        transition={200}
-      />
-      <View style={styles.compactInfo}>
-        <Text style={styles.speciesCompact} numberOfLines={2}>
-          {animon.species}
-        </Text>
-        <View style={styles.tags}>
-          {animon.types.slice(0, 1).map((type) => (
-            <TypeTagChip key={type} type={type} size="sm" />
-          ))}
-        </View>
-        <View style={styles.footer}>
-          <RarityBadge rarity={animon.rarity} size="sm" />
-          <Text style={styles.region} numberOfLines={1}>
-            {animon.region}
-          </Text>
-        </View>
-      </View>
-    </View>
-  ) : (
-    <>
-      {/* Image area — fixed 120px */}
-      <View style={styles.imageWrapper}>
-        <Image
-          source={{ uri: animon.photoUrl }}
-          style={styles.image}
-          contentFit="cover"
-          transition={200}
-        />
-        {/* Type-tint gradient on image bottom */}
-        {primaryTypeDef && (
-          <View
-            style={[
-              styles.imageTint,
-              { backgroundColor: primaryTypeDef.color },
-            ]}
+  // â”€â”€ Compact card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  if (compact) {
+    const inner = (
+      <Pressable
+        onPress={() => onPress?.(animon)}
+        style={({ pressed }) => [
+          styles.compactCard,
+          outerBorderStyle(animon.rarity),
+          pressed && styles.pressed,
+        ]}
+      >
+        {/* Image panel â€” 42% width */}
+        <View style={styles.compactImagePanel}>
+          <Image
+            source={{ uri: animon.photoUrl }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            transition={200}
           />
-        )}
-      </View>
-      {/* Info area — fixed 90px */}
-      <View style={styles.info}>
-        <Text style={styles.species} numberOfLines={1}>
-          {animon.species}
-        </Text>
-        {animon.breed && (
-          <Text style={styles.breed} numberOfLines={1}>
-            {animon.breed}
-          </Text>
-        )}
-        <View style={styles.tags}>
-          {animon.types.slice(0, 2).map((type) => (
-            <TypeTagChip key={type} type={type} size="sm" />
-          ))}
+          {/* Accession tag â€” museum sticker in top-right corner */}
+          <View style={styles.compactAccessionTag}>
+            <Text style={styles.compactAccessionText}>{accession}</Text>
+          </View>
         </View>
-        <View style={styles.footer}>
-          <RarityBadge rarity={animon.rarity} size="sm" />
-          <Text style={styles.region} numberOfLines={1}>
-            {animon.region}
+
+        {/* Data panel â€” 58% width */}
+        <View style={styles.compactDataPanel}>
+          <Text style={styles.compactSpecies} numberOfLines={2}>
+            {animon.species}
           </Text>
+          <View style={styles.compactTags}>
+            {animon.types.slice(0, 1).map((t) => (
+              <TypeTagChip key={t} type={t} size="sm" />
+            ))}
+          </View>
+          <View style={styles.compactFooter}>
+            <RarityBadge rarity={animon.rarity} size="sm" />
+            <Text style={styles.compactRegion} numberOfLines={1}>
+              {animon.region}
+            </Text>
+          </View>
         </View>
-      </View>
-    </>
-  );
+      </Pressable>
+    );
 
-  const innerCard = (
-    <Pressable
-      onPress={() => onPress?.(animon)}
-      style={({ pressed }) => [
-        compact ? styles.cardCompact : styles.card,
-        pressed && (compact ? styles.pressedCompact : styles.pressed),
-      ]}
-    >
-      {cardContent}
-    </Pressable>
-  );
-
-  if (animon.rarity === 'glossy') {
-    return (
-      <View style={[styles.glossyOuter, compact && styles.glossyOuterCompact]}>
-        <View style={[styles.glossyBorder, compact && styles.glossyBorderCompact]}>
+    if (animon.rarity === 'glossy') {
+      return (
+        <View style={styles.glossyOuterCompact}>
           <Animated.View style={[StyleSheet.absoluteFill, shimmerStyle]}>
             <LinearGradient
-              colors={['#B8860B', '#FFD700', '#D4A017', '#FFFACD', '#B8860B']}
+              colors={['#C6882A', '#E8B455', '#D4A040', '#F5E4B5', '#C6882A']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={StyleSheet.absoluteFill}
             />
           </Animated.View>
-          <View style={styles.glossyInner}>
-            {innerCard}
+          <View style={styles.glossyInnerCompact}>
+            {inner}
           </View>
         </View>
+      );
+    }
+
+    if (animon.rarity === 'rare') {
+      return (
+        <View style={styles.rareOuterCompact}>
+          {inner}
+        </View>
+      );
+    }
+
+    return inner;
+  }
+
+  // â”€â”€ Full grid card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const labelStripBg = animon.rarity === 'glossy'
+    ? '#F2E8C8'  // slightly warmer cream for glossy â€” gold-leaf sizing reference
+    : colors.cardStock;
+
+  const innerCard = (
+    <Pressable
+      onPress={() => onPress?.(animon)}
+      style={({ pressed }) => [
+        styles.card,
+        outerBorderStyle(animon.rarity),
+        pressed && styles.pressed,
+      ]}
+    >
+      {/* â”€â”€ Zone A: Image (65% of card height) â”€â”€ */}
+      <View style={styles.imageZone}>
+        <Image
+          source={{ uri: animon.photoUrl }}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          transition={200}
+        />
+        {/* Rarity corner tab â€” archival sticker on folder edge */}
+        {animon.rarity !== 'common' && (
+          <View
+            style={[
+              styles.rarityCornerTab,
+              { backgroundColor: colors.rarity[animon.rarity] },
+            ]}
+          />
+        )}
+      </View>
+
+      {/* â”€â”€ Zone B: Specimen Label Strip (35% of card height) â”€â”€ */}
+      <View style={[styles.labelStrip, { backgroundColor: labelStripBg }]}>
+        {/* 1px horizontal rule â€” the separator line on the herbarium label */}
+        <View style={styles.labelRule} />
+        {/* Label content */}
+        <View style={styles.labelContent}>
+          {/* Row 1 â€” species name + accession number */}
+          <View style={styles.labelRow1}>
+            <Text
+              style={styles.labelSpecies}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {animon.species}
+            </Text>
+            <Text style={styles.labelAccession}>{accession}</Text>
+          </View>
+          {/* Row 2 â€” type chips + region */}
+          <View style={styles.labelRow2}>
+            <View style={styles.labelTags}>
+              {animon.types.slice(0, 2).map((t) => (
+                <TypeTagChip key={t} type={t} size="sm" />
+              ))}
+            </View>
+            <Text style={styles.labelRegion} numberOfLines={1}>
+              {animon.region}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </Pressable>
+  );
+
+  // Glossy shimmer border wrapper
+  if (animon.rarity === 'glossy') {
+    return (
+      <View style={styles.glossyOuter}>
+        <Animated.View style={[StyleSheet.absoluteFill, shimmerStyle]}>
+          <LinearGradient
+            colors={['#C6882A', '#E8B455', '#D4A040', '#F5E4B5', '#C6882A']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
+        <View style={styles.glossyInner}>
+          {innerCard}
+        </View>
+      </View>
+    );
+  }
+
+  // Rare double-rule border wrapper
+  if (animon.rarity === 'rare') {
+    return (
+      <View style={styles.rareOuter}>
+        {innerCard}
       </View>
     );
   }
@@ -163,158 +252,199 @@ export function AnimonCard({ animon, onPress, compact = false }: AnimonCardProps
   return innerCard;
 }
 
+const CARD_HEIGHT = 210;
+
 const styles = StyleSheet.create({
-  // ── Full grid card (compact=false) ────────────────────────────────────────
+  // â”€â”€ Full card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   card: {
-    backgroundColor: colors.surfaceCard,
-    borderRadius: 16,
+    height: CARD_HEIGHT,
+    borderRadius: 3,
     overflow: 'hidden',
-    // Raised multi-layer shadow
-    shadowColor: '#1A0F00',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.30,
-    shadowRadius: 10,
-    elevation: 10,
-    // Inner bevel borders
-    borderWidth: 1,
-    borderTopColor: '#FFFFFF',
-    borderLeftColor: '#FFFFFF',
-    borderBottomColor: '#B8AD96',
-    borderRightColor: '#B8AD96',
+    flexDirection: 'column',
   },
   pressed: {
     transform: [{ scale: 0.97 }],
-    shadowOpacity: 0.15,
-    elevation: 4,
   },
-  // Image area — fixed 120px
-  imageWrapper: {
-    height: 120,
+
+  // Image zone â€” 65% of card height
+  imageZone: {
+    flex: 65,
     overflow: 'hidden',
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
+    position: 'relative',
   },
-  image: {
-    width: '100%',
-    height: 120,
-  },
-  imageTint: {
+
+  // Rarity corner tab â€” small colored sticker at top-left
+  rarityCornerTab: {
     position: 'absolute',
-    bottom: 0,
+    top: 0,
     left: 0,
-    right: 0,
-    height: 32,
-    opacity: 0.22,
+    width: 20,
+    height: 20,
   },
-  // Info area — fixed 90px
-  info: {
-    height: 90,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+
+  // Specimen Label Strip â€” 35% of card height, cardStock background
+  labelStrip: {
+    flex: 35,
+    flexDirection: 'column',
+  },
+
+  // 1px separator rule between image and label
+  labelRule: {
+    height: 1,
+    backgroundColor: colors.inkRule,
+  },
+
+  // Label content â€” padded interior
+  labelContent: {
+    flex: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
     justifyContent: 'space-between',
   },
-  species: {
-    fontFamily: typography.fontFamily.headingBold,
-    fontSize: typography.fontSize.base,
-    color: colors.textPrimary,
-    lineHeight: typography.fontSize.base * 1.2,
-  },
-  breed: {
-    fontFamily: typography.fontFamily.body,
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
 
-  // ── Compact carousel card (compact=true) ──────────────────────────────────
-  cardCompact: {
-    height: 140,
-    overflow: 'hidden',
+  // Row 1: species name (left) + accession number (right)
+  labelRow1: {
     flexDirection: 'row',
-    borderRadius: 14,
-    backgroundColor: colors.surfaceCard,
-    // Raised shadow
-    shadowColor: '#1A0F00',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.22,
-    shadowRadius: 7,
-    elevation: 7,
-    borderWidth: 1,
-    borderColor: '#E0D8C8',
-    borderTopColor: '#F5EDD8',
-  },
-  pressedCompact: {
-    transform: [{ scale: 0.97 }],
-    shadowOpacity: 0.10,
-    elevation: 3,
-  },
-  compactInner: {
-    flexDirection: 'row',
-    height: 140,
-  },
-  imageCompact: {
-    width: 80,
-    height: 80,
-    borderRadius: 10,
-    margin: 10,
-    alignSelf: 'center',
-  },
-  compactInfo: {
-    flex: 1,
-    padding: 10,
-    justifyContent: 'center',
-    gap: 6,
-  },
-  speciesCompact: {
-    fontFamily: typography.fontFamily.heading,
-    fontSize: 14,
-    color: colors.textPrimary,
-    lineHeight: 18,
-  },
-
-  // ── Shared ────────────────────────────────────────────────────────────────
-  tags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
     gap: 4,
-    marginTop: 4,
   },
-  footer: {
+  labelSpecies: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: typography.fontSize.sm,
+    fontStyle: 'italic',
+    color: colors.inkBlack,
+    flex: 1,
+  },
+  labelAccession: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: typography.fontSize.xs,
+    color: colors.inkFaded,
+    flexShrink: 0,
+  },
+
+  // Row 2: type chips (left) + region (right)
+  labelRow2: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 4,
+    gap: 4,
   },
-  region: {
-    fontFamily: typography.fontFamily.body,
-    fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
+  labelTags: {
+    flexDirection: 'row',
+    gap: 3,
     flex: 1,
+    flexWrap: 'nowrap',
+  },
+  labelRegion: {
+    fontFamily: typography.fontFamily.bodyMedium,
+    fontSize: typography.fontSize.xs,
+    color: colors.inkFaded,
+    flexShrink: 0,
+    maxWidth: '45%',
     textAlign: 'right',
-    marginLeft: 6,
   },
 
-  // ── Glossy shimmer border wrapper ─────────────────────────────────────────
-  glossyOuter: {
-    borderRadius: 18,
-    shadowColor: colors.rarity.glossy,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  glossyOuterCompact: {
-    borderRadius: 16,
+  // â”€â”€ Compact card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  compactCard: {
     height: 140,
+    flexDirection: 'row',
+    borderRadius: 3,
+    overflow: 'hidden',
+    backgroundColor: colors.cardStock,
   },
-  glossyBorder: {
-    borderRadius: 18,
+
+  // Image panel â€” 42% width, full height
+  compactImagePanel: {
+    width: '42%',
+    height: 140,
+    position: 'relative',
     overflow: 'hidden',
   },
-  glossyBorderCompact: {
-    borderRadius: 16,
+
+  // Accession tag overlay â€” museum sticker in top-right corner of image
+  compactAccessionTag: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: 'rgba(26,21,16,0.65)',
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 2,
+  },
+  compactAccessionText: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: 9,
+    color: colors.amberFaint,
+  },
+
+  // Data panel â€” 58% width, full height
+  compactDataPanel: {
+    flex: 1,
+    backgroundColor: colors.cardStock,
+    borderLeftWidth: 1,
+    borderLeftColor: colors.inkRule,
+    padding: 8,
+    justifyContent: 'space-between',
+  },
+  compactSpecies: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: typography.fontSize.base,
+    fontStyle: 'italic',
+    color: colors.inkBlack,
+    lineHeight: typography.fontSize.base * typography.lineHeight.label,
+  },
+  compactTags: {
+    flexDirection: 'row',
+    gap: 3,
+  },
+  compactFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  compactRegion: {
+    fontFamily: typography.fontFamily.bodyMedium,
+    fontSize: typography.fontSize.xs,
+    color: colors.inkFaded,
+    flex: 1,
+    textAlign: 'right',
+    marginLeft: 4,
+  },
+
+  // â”€â”€ Glossy shimmer border wrappers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  glossyOuter: {
+    borderRadius: 5,
+    overflow: 'hidden',
+    padding: 2,
   },
   glossyInner: {
-    margin: 2.5,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  glossyOuterCompact: {
+    borderRadius: 5,
+    overflow: 'hidden',
+    padding: 2,
+  },
+  glossyInnerCompact: {
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+
+  // â”€â”€ Rare double-rule outer wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  rareOuter: {
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(42,75,138,0.40)',
+    overflow: 'hidden',
+  },
+  rareOuterCompact: {
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(42,75,138,0.40)',
+    overflow: 'hidden',
   },
 });
+
+

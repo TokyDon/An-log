@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontFamily: typography.fontFamily.mono,
     fontSize: 13,
-    color: colors.amberReadout,
+    color: colors.inkAmber,
     letterSpacing: 2,
   },
 
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: colors.metalBrush,
+    borderBottomColor: colors.instrumentBrass,
   },
   closeBtn: {
     width: 36,
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeIcon: {
-    color: colors.textInverse,
+    color: colors.inkInverse,
     fontSize: 15,
     fontFamily: typography.fontFamily.bodyBold,
   },
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: typography.fontFamily.mono,
     fontSize: 13,
-    color: colors.amberReadout,
+    color: colors.inkAmber,
     textAlign: 'center',
     letterSpacing: 2,
   },
@@ -383,13 +383,13 @@ const styles = StyleSheet.create({
   modeActive: {
     fontFamily: typography.fontFamily.monoBold,
     fontSize: 11,
-    color: colors.amberReadout,
+    color: colors.inkAmber,
     letterSpacing: 1,
   },
   modeInactive: {
     fontFamily: typography.fontFamily.mono,
     fontSize: 11,
-    color: colors.textMuted,
+    color: colors.inkFaded,
     letterSpacing: 1,
   },
 
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: colors.deviceBezel,
     borderTopWidth: 1,
-    borderTopColor: colors.metalBrush,
+    borderTopColor: colors.instrumentBrass,
     paddingVertical: 24,
     paddingHorizontal: 40,
     flexDirection: 'row',
@@ -413,9 +413,9 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 10,
-    backgroundColor: colors.metalBrush,
+    backgroundColor: colors.instrumentBrass,
     borderWidth: 1,
-    borderColor: colors.metalBrushLight,
+    borderColor: colors.instrumentBrassLight,
   },
   shutterOuter: {
     width: 72,
@@ -441,11 +441,11 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 10,
-    backgroundColor: colors.metalBrush,
+    backgroundColor: colors.instrumentBrass,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.metalBrushLight,
+    borderColor: colors.instrumentBrassLight,
   },
   flashIcon: { fontSize: 20 },
 
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: colors.surfaceCard,
+    backgroundColor: colors.cardStock,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     padding: 24,
@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
   resultHandle: {
     width: 40,
     height: 4,
-    backgroundColor: colors.surfaceBorder,
+    backgroundColor: colors.inkRule,
     borderRadius: 2,
     alignSelf: 'center',
     marginBottom: 4,
@@ -478,7 +478,7 @@ const styles = StyleSheet.create({
   captureConfirm: {
     fontFamily: typography.fontFamily.monoBold,
     fontSize: 13,
-    color: colors.scannerGreenLight,
+    color: colors.mossLight,
     letterSpacing: 1.5,
     textAlign: 'center',
   },
@@ -492,24 +492,24 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: colors.surfaceBorder,
+    borderColor: colors.inkRule,
   },
   resultInfo: { flex: 1, gap: 4 },
   resultSpecies: {
     fontFamily: typography.fontFamily.headingBold,
     fontSize: typography.fontSize['2xl'],
-    color: colors.textPrimary,
+    color: colors.inkBlack,
     lineHeight: typography.fontSize['2xl'] * 1.12,
   },
   resultBreed: {
     fontFamily: typography.fontFamily.body,
     fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+    color: colors.inkBrown,
   },
   resultConfidence: {
     fontFamily: typography.fontFamily.mono,
     fontSize: typography.fontSize.xs,
-    color: colors.amberReadout,
+    color: colors.inkAmber,
     letterSpacing: 1,
   },
   resultTags: {
@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
   resultRegion: {
     fontFamily: typography.fontFamily.body,
     fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+    color: colors.inkBrown,
   },
   resultActions: {
     flexDirection: 'row',
@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
   retryBtn: {
     flex: 1,
     borderWidth: 1.5,
-    borderColor: colors.surfaceBorder,
+    borderColor: colors.inkRule,
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
@@ -543,18 +543,18 @@ const styles = StyleSheet.create({
   retryBtnText: {
     fontFamily: typography.fontFamily.monoBold,
     fontSize: 13,
-    color: colors.textSecondary,
+    color: colors.inkBrown,
     letterSpacing: 1,
   },
   addBtn: {
     flex: 2,
-    backgroundColor: colors.scannerGreen,
+    backgroundColor: colors.forestFloor,
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.scannerGreenGlow,
-    shadowColor: colors.scannerGreenGlow,
+    borderColor: colors.amberGlow,
+    shadowColor: colors.amberGlow,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.40,
     shadowRadius: 8,
@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
   addBtnText: {
     fontFamily: typography.fontFamily.monoBold,
     fontSize: 13,
-    color: colors.textInverse,
+    color: colors.inkInverse,
     letterSpacing: 1,
   },
 });

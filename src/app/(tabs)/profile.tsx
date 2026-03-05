@@ -1,8 +1,8 @@
 /**
- * Profile Tab
+ * Profile Tab — Naturalist Field Journal v2
  *
- * BioField Scanner MK-II — hero zone, stat strip, rarity bar,
- * recent catches carousel, Anílog+ upgrade banner.
+ * forestFloor hero zone, specimenCream scroll, cardStock stat strip,
+ * inkRule borders, amberGlow upgrade banner.
  */
 
 import React from 'react';
@@ -165,14 +165,14 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.screenBg,
+    backgroundColor: colors.specimenCream,
   },
   scrollContent: { paddingBottom: 16 },
 
   // Hero zone
   heroZone: {
     height: 210,
-    backgroundColor: colors.scannerGreen,
+    backgroundColor: colors.forestFloor,
     alignItems: 'center',
     justifyContent: 'flex-end',
     paddingBottom: 24,
@@ -208,12 +208,12 @@ const styles = StyleSheet.create({
   avatarInitials: {
     fontFamily: typography.fontFamily.headingBold,
     fontSize: typography.fontSize.xl,
-    color: colors.amberReadout,
+    color: colors.inkAmber,
   },
   username: {
     fontFamily: typography.fontFamily.headingBlack,
     fontSize: typography.fontSize['2xl'],
-    color: colors.textInverse,
+    color: colors.inkInverse,
   },
   memberSince: {
     fontFamily: typography.fontFamily.mono,
@@ -226,18 +226,15 @@ const styles = StyleSheet.create({
   // Stat strip
   statStrip: {
     flexDirection: 'row',
-    backgroundColor: colors.deviceBezel,
+    backgroundColor: colors.cardStock,
     marginHorizontal: 20,
     marginTop: -1,
-    borderRadius: 12,
+    borderRadius: 3,
     borderWidth: 1,
-    borderColor: colors.metalBrush,
+    borderColor: colors.inkRule,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.inkRule,
     marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.35,
-    shadowRadius: 5,
-    elevation: 5,
   },
   statPanel: {
     flex: 1,
@@ -246,19 +243,19 @@ const styles = StyleSheet.create({
   },
   statDivider: {
     width: 1,
-    backgroundColor: colors.metalBrush,
+    backgroundColor: colors.inkRule,
     marginVertical: 10,
   },
   statValue: {
     fontFamily: typography.fontFamily.monoBold,
     fontSize: typography.fontSize['2xl'],
-    color: colors.amberReadout,
+    color: colors.inkBlack,
     lineHeight: typography.fontSize['2xl'] * 1.1,
   },
   statLabel: {
     fontFamily: typography.fontFamily.mono,
     fontSize: 10,
-    color: colors.textMuted,
+    color: colors.inkFaded,
     marginTop: 4,
     letterSpacing: 1.5,
   },
@@ -271,7 +268,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: typography.fontFamily.bodyMedium,
     fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
+    color: colors.inkFaded,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
@@ -311,7 +308,7 @@ const styles = StyleSheet.create({
   rarityLegendText: {
     fontFamily: typography.fontFamily.mono,
     fontSize: 10,
-    color: colors.textSecondary,
+    color: colors.inkBrown,
     letterSpacing: 0.8,
   },
 
@@ -328,14 +325,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   upgradeBanner: {
-    borderRadius: 20,
+    borderRadius: 4,
     padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     borderWidth: 1.5,
-    borderColor: colors.scannerGreenGlow,
-    shadowColor: colors.scannerGreenGlow,
+    borderColor: colors.instrumentBrass,
+    shadowColor: colors.amberGlow,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.30,
     shadowRadius: 8,
@@ -345,7 +342,7 @@ const styles = StyleSheet.create({
   upgradeTitle: {
     fontFamily: typography.fontFamily.headingBold,
     fontSize: typography.fontSize.lg,
-    color: colors.textInverse,
+    color: colors.inkInverse,
   },
   upgradeSub: {
     fontFamily: typography.fontFamily.body,
@@ -354,20 +351,15 @@ const styles = StyleSheet.create({
     lineHeight: typography.fontSize.sm * 1.5,
   },
   upgradeBtn: {
-    backgroundColor: colors.amberReadout,
-    borderRadius: 12,
+    backgroundColor: colors.amberResin,
+    borderRadius: 3,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    shadowColor: colors.amberGlow,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.45,
-    shadowRadius: 5,
-    elevation: 4,
   },
   upgradeBtnText: {
     fontFamily: typography.fontFamily.monoBold,
     fontSize: 13,
-    color: colors.deviceBezel,
+    color: colors.inkInverse,
     letterSpacing: 1,
   },
 });

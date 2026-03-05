@@ -1,7 +1,10 @@
-/**
- * My Anílog Tab — Collection Grid
+﻿/**
+ * My AnÃ­log Tab â€” Field Naturalist Edition v2
  *
- * BioField Scanner MK-II skeuomorphic grid with inset/raised filter chips.
+ * Specimen collection grid:
+ * - forestFloor dark header (matches all other screens)
+ * - Type filter bar: specimen-drawer inset field-guide color bands
+ * - 2-col grid of full AnimonCards on specimenCream ground
  */
 
 import React, { useState, useMemo } from 'react';
@@ -27,17 +30,16 @@ import type { AnimonType } from '../../types/animon';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const COLUMN_GAP = 12;
-const SIDE_PAD = 20;
+const SIDE_PAD = 16;
 const CARD_WIDTH = (SCREEN_WIDTH - SIDE_PAD * 2 - COLUMN_GAP) / 2;
 
 type FilterOption = 'all' | AnimonType;
 
-const FILTER_OPTIONS: Array<{ key: FilterOption; label: string; emoji: string }> = [
-  { key: 'all', label: 'All', emoji: '✦' },
+const FILTER_OPTIONS: Array<{ key: FilterOption; label: string }> = [
+  { key: 'all', label: 'ALL' },
   ...ANIMON_TYPES.map((t) => ({
     key: t as FilterOption,
-    label: TYPE_DEFINITIONS[t].label,
-    emoji: TYPE_DEFINITIONS[t].emoji,
+    label: TYPE_DEFINITIONS[t].label.toUpperCase(),
   })),
 ];
 
@@ -54,19 +56,24 @@ export default function AnilogScreen() {
   }
 
   const activeFilterLabel =
-    activeFilter === 'all' ? '' : TYPE_DEFINITIONS[activeFilter as AnimonType]?.label ?? '';
+    activeFilter === 'all'
+      ? ''
+      : TYPE_DEFINITIONS[activeFilter as AnimonType]?.label ?? '';
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      {/* â”€â”€ Dark header â”€â”€ */}
       <View style={styles.header}>
-        <Text style={styles.heading}>My Anílog</Text>
+        <View>
+          <Text style={styles.wordmark}>ANÃLOG</Text>
+          <Text style={styles.screenTitle}>My AnÃ­log</Text>
+        </View>
         <View style={styles.specimenBadge}>
-          <Text style={styles.specimenText}>{MOCK_ANIMONS.length} SPECIMENS LOGGED</Text>
+          <Text style={styles.specimenBadgeText}>{MOCK_ANIMONS.length} LOGGED</Text>
         </View>
       </View>
 
-      {/* Filter chips — raised (inactive) / inset (active) */}
+      {/* â”€â”€ Filter bar â”€â”€ */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -82,33 +89,34 @@ export default function AnilogScreen() {
               key={opt.key}
               style={[
                 styles.filterChip,
-                isActive ? styles.filterChipActive : styles.filterChipInactive,
+                isActive
+                  ? [styles.filterChipActive, typeColor ? { borderColor: typeColor } : {}]
+                  : styles.filterChipInactive,
               ]}
               onPress={() => setActiveFilter(opt.key)}
             >
-              {isActive && opt.key !== 'all' && (
-                <Text style={styles.filterEmoji}>{opt.emoji}</Text>
-              )}
               <Text
                 style={[
                   styles.filterChipText,
-                  isActive && { color: typeColor ?? colors.scannerGreenLight },
-                  !isActive && styles.filterChipTextInactive,
+                  isActive
+                    ? { color: typeColor ?? colors.inkBlack }
+                    : styles.filterChipTextInactive,
                 ]}
               >
-                {isActive && opt.key === 'all' ? `${opt.emoji} ${opt.label}` : opt.label}
+                {opt.label}
               </Text>
             </TouchableOpacity>
           );
         })}
       </ScrollView>
 
-      {/* Grid */}
+      {/* â”€â”€ Grid â”€â”€ */}
       {filteredAnimons.length === 0 ? (
         <EmptyState
-          emoji="🌿"
-          title={`No ${activeFilterLabel} Anímon yet`}
-          description="Get out there and catch some! 🌿"
+          title={`No ${activeFilterLabel} specimens`}
+          description="Head outside and scan the next animal you find"
+          ctaLabel="OPEN SCANNER"
+          onCta={() => router.push('/camera')}
         />
       ) : (
         <FlatList
@@ -130,87 +138,89 @@ export default function AnilogScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: colors.screenBg,
+    backgroundColor: colors.deviceBody,
   },
+
+  // Dark forestFloor header â€” mirrors Discover screen
   header: {
+    backgroundColor: colors.forestFloor,
     paddingHorizontal: SIDE_PAD,
-    paddingTop: 20,
-    paddingBottom: 12,
-    backgroundColor: colors.screenBg,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
   },
-  heading: {
-    fontFamily: typography.fontFamily.headingBold,
-    fontSize: typography.fontSize['2xl'],
-    color: colors.textPrimary,
+  wordmark: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: typography.fontSize.sm,
+    color: colors.amberGlow,
+    letterSpacing: 4,
+    textTransform: 'uppercase',
+  },
+  screenTitle: {
+    fontFamily: typography.fontFamily.heading,
+    fontStyle: 'italic',
+    fontSize: typography.fontSize['3xl'],
+    color: colors.inkInverse,
+    lineHeight: typography.fontSize['3xl'] * typography.lineHeight.heading,
   },
   specimenBadge: {
-    alignSelf: 'flex-start',
-    marginTop: 6,
-    backgroundColor: colors.deviceBezel,
-    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: colors.instrumentBrass,
+    borderRadius: 3,
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
   },
-  specimenText: {
+  specimenBadgeText: {
     fontFamily: typography.fontFamily.mono,
-    fontSize: 12,
-    color: colors.amberReadout,
+    fontSize: typography.fontSize.xs,
+    color: colors.inkAmber,
+    letterSpacing: typography.letterSpacing.label,
   },
+
+  // Filter bar
   filterScroll: {
+    backgroundColor: colors.specimenCream,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.inkRule,
     maxHeight: 52,
-    backgroundColor: colors.screenBg,
   },
   filterRow: {
     paddingHorizontal: SIDE_PAD,
+    paddingVertical: 10,
     gap: 8,
-    paddingBottom: 12,
     alignItems: 'center',
   },
   filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    gap: 4,
+    borderRadius: 3,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderWidth: 1,
   },
   filterChipInactive: {
-    backgroundColor: colors.surfacePanel,
-    borderWidth: 1,
-    borderColor: colors.surfaceBorder,
-    // Raised shadow (inactive)
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 3,
+    backgroundColor: colors.parchment,
+    borderColor: colors.inkRule,
   },
   filterChipActive: {
-    // Inset / pressed-in effect
-    backgroundColor: colors.surfaceInset,
-    borderWidth: 1,
-    borderTopColor: '#B8AD96',
-    borderBottomColor: '#E8E2D0',
-    borderLeftColor: '#B8AD96',
-    borderRightColor: '#E8E2D0',
-    elevation: 0,
+    backgroundColor: colors.insetPanel,
+    borderColor: colors.inkBlack,
   },
   filterChipText: {
-    fontFamily: typography.fontFamily.bodyBold,
+    fontFamily: typography.fontFamily.bodyMedium,
     fontSize: typography.fontSize.sm,
+    letterSpacing: typography.letterSpacing.label,
   },
   filterChipTextInactive: {
-    color: colors.textSecondary,
-    fontFamily: typography.fontFamily.bodyMedium,
+    color: colors.inkBrown,
   },
-  filterEmoji: {
-    fontSize: 14,
-  },
+
+  // Grid
   grid: {
+    backgroundColor: colors.specimenCream,
     paddingHorizontal: SIDE_PAD,
-    paddingTop: 4,
+    paddingTop: 12,
     paddingBottom: 24,
     gap: COLUMN_GAP,
   },

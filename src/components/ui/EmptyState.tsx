@@ -1,16 +1,17 @@
-/**
- * EmptyState
+﻿/**
+ * EmptyState â€” Field Naturalist Edition v2
  *
- * Generic empty state component with optional CTA button.
+ * Domain-appropriate empty state: no emoji as icon â€” uses a circular
+ * inkRule-bordered disc instead. Playfair italic title, DM Sans description,
+ * forestFloor CTA button.
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { colors } from '../../constants/colors';
 import { typography } from '../../constants/typography';
 
 interface EmptyStateProps {
-  emoji?: string;
   title: string;
   description: string;
   ctaLabel?: string;
@@ -18,7 +19,6 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({
-  emoji = '🔍',
   title,
   description,
   ctaLabel,
@@ -26,13 +26,17 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.emoji}>{emoji}</Text>
+      {/* Domain icon disc â€” archival circle placeholder */}
+      <View style={styles.iconDisc} />
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.description}>{description}</Text>
       {ctaLabel && onCta && (
-        <TouchableOpacity style={styles.cta} onPress={onCta}>
+        <Pressable
+          style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
+          onPress={onCta}
+        >
           <Text style={styles.ctaLabel}>{ctaLabel}</Text>
-        </TouchableOpacity>
+        </Pressable>
       )}
     </View>
   );
@@ -44,32 +48,52 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 40,
+    gap: 12,
   },
-  emoji: { fontSize: 56, marginBottom: 16 },
+
+  // Circular domain icon disc
+  iconDisc: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: colors.inkRule,
+    marginBottom: 4,
+  },
+
   title: {
     fontFamily: typography.fontFamily.heading,
-    fontSize: typography.fontSize.xl,
-    color: colors.textPrimary,
+    fontStyle: 'italic',
+    fontSize: typography.fontSize.md,
+    color: colors.inkFaded,
     textAlign: 'center',
-    marginBottom: 8,
+    lineHeight: typography.fontSize.md * typography.lineHeight.heading,
   },
   description: {
     fontFamily: typography.fontFamily.body,
     fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
+    color: colors.inkGhost,
     textAlign: 'center',
-    lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
+    lineHeight: typography.fontSize.base * typography.lineHeight.normal,
   },
+
+  // CTA â€” forestFloor background, mossLight text
   cta: {
-    marginTop: 24,
-    backgroundColor: colors.scannerGreen,
-    borderRadius: 28,
-    paddingHorizontal: 28,
-    paddingVertical: 14,
+    marginTop: 8,
+    backgroundColor: colors.forestFloor,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 4,
+  },
+  ctaPressed: {
+    opacity: 0.75,
   },
   ctaLabel: {
-    fontFamily: typography.fontFamily.bodyBold,
-    fontSize: typography.fontSize.base,
-    color: '#FFFFFF',
+    fontFamily: typography.fontFamily.bodyMedium,
+    fontSize: typography.fontSize.sm,
+    color: colors.mossLight,
+    letterSpacing: typography.letterSpacing.wide,
   },
 });
+
+

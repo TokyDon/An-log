@@ -4,6 +4,16 @@ _Maintained by Rodjar (Orchestrator). Agents read from and write status updates 
 
 ---
 
+## DESIGN SPEC V2 — 2026-03-05
+Status: SPEC COMPLETE — awaiting Frontend Developer implementation  
+Skill adherence: ✅ interface-design invoked + domain exploration completed | ✅ refactoring-ui invoked + pre-scored | ✅ microinteractions invoked + 4 interactions defined  
+Domain exploration: ✅ All 4 required outputs produced (Domain, Color World, Signature, Defaults)  
+Pre-score: 9.0/10 (63/70 across 7 principles)  
+Key deliverables: Full colour system (colors.ts replacement), typography rules, AnimonCard hero spec (specimen label strip signature), TabBar instrument panel spec, RarityBadge stamp spec, TypeTagChip recessed spec, 4 screen layouts, 4 microinteractions, 9 named-rejected defaults  
+Spec file: `_rodjar/design-spec-v2.md`
+
+---
+
 ## 🐛 Active Bugs
 
 | # | Severity | Description | Assigned To | Status |
@@ -64,6 +74,7 @@ _Agents append their output summaries here when completing tasks._
 | 2026-03-05 | Developer | Fix B-001 re-open — perpetual loading (runtime causes) | ✅ Fixed — 3 runtime root causes resolved (see B-001 re-open post-mortem below) |
 | 2026-03-05 | QA Tester | Re-verify B-001 (qa-reverify-B-001.md) | ✅ VERIFIED RESOLVED — all checks passed (see re-verification report below) |
 | 2026-03-05 | UX/UI Designer | Skeuomorphic redesign spec | ✅ Complete — see design-spec-skeuomorphic.md |
+| 2026-03-05 | UX UI Designer | Deep redesign spec v2 (all 3 skills invoked) | ✅ SPEC COMPLETE — design-spec-v2.md. Domain exploration: 8 domain concepts, 10 real-world colors, Specimen Label Strip signature, 3 named+replaced defaults. 4 tests: all PASS. Pre-score 9.0/10. Full color system (colors.ts replacement), typography rules, hero AnimonCard spec, TabBar instrument panel, RarityBadge stamp, TypeTagChip recessed, 4 screen layouts, 4 microinteractions. |
 | 2026-03-05 | Developer | Skeuomorphic redesign implementation | ✅ Complete — see dev-task-redesign.md |
 | 2026-03-05 | QA Tester | Skeuomorphic redesign verification | ⚠️ CONDITIONAL PASS — 2 HIGH bugs (B-003, B-004), 1 MEDIUM (B-005), 2 LOW (B-006, B-007). Full report: qa-redesign-findings.md. Redesign substantially correct; must fix B-003/B-004/B-005 before merge. |
 | 2026-03-05 | Developer | QA fixes B-003–B-007 | ✅ Complete — B-003 CameraTab deleted (unused); B-004 EmptyState tokens migrated; B-005 heroSpecies fontSize tokenised; B-006 glossyOuterCompact height added; B-007 RarityBadge border token. TypeScript: clean. Web export: clean (1223ms, 1348 modules). |

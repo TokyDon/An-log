@@ -1,13 +1,21 @@
-/**
- * TypeTagChip
+﻿/**
+ * TypeTagChip â€” Field Naturalist Edition v2
  *
- * Skeuomorphic raised classification tab — pinned to a specimen board.
- * Inset top highlight + bottom shadow simulate a physical raised tab.
+ * Inset/recessed classification pill. Background is the neutral insetPanel
+ * (not the type colour). The type colour appears only in the borders and text,
+ * giving a specimen-drawer label aesthetic rather than a filled pill.
+ *
+ * Border breakdown (all use type colour with opacity):
+ *   top    â€” rgba(255,255,255,0.40)  â† white highlight = recessed bevel
+ *   bottom â€” typeColor @ 60%
+ *   left   â€” typeColor @ 40%
+ *   right  â€” typeColor @ 40%
  */
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { TYPE_DEFINITIONS } from '../../constants/typeSystem';
+import { colors } from '../../constants/colors';
 import { typography } from '../../constants/typography';
 import type { AnimonType } from '../../types/animon';
 
@@ -16,29 +24,42 @@ interface TypeTagChipProps {
   size?: 'sm' | 'md';
 }
 
+/** Convert a 6-digit hex color string to rgba(r,g,b,alpha) */
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 export function TypeTagChip({ type, size = 'md' }: TypeTagChipProps) {
   const def = TYPE_DEFINITIONS[type];
   if (!def) return null;
+
+  const typeHex = def.color;
 
   return (
     <View
       style={[
         styles.chip,
-        { backgroundColor: def.color },
         size === 'sm' ? styles.chipSm : styles.chipMd,
+        {
+          borderTopColor:    'rgba(255,255,255,0.40)',
+          borderBottomColor: hexToRgba(typeHex, 0.60),
+          borderLeftColor:   hexToRgba(typeHex, 0.40),
+          borderRightColor:  hexToRgba(typeHex, 0.40),
+        },
       ]}
     >
-      {/* Inner highlight top edge */}
-      <View style={styles.highlightEdge} />
       <Text
         style={[
           styles.label,
-          { color: def.textColor },
           size === 'sm' ? styles.labelSm : styles.labelMd,
+          { color: hexToRgba(typeHex, 0.90) },
         ]}
       >
-        <Text style={size === 'sm' ? styles.emojiSm : styles.emojiMd}>{def.emoji}</Text>
-        {'  '}{def.label}
+        {def.label.toUpperCase()}
       </Text>
     </View>
   );
@@ -46,46 +67,26 @@ export function TypeTagChip({ type, size = 'md' }: TypeTagChipProps) {
 
 const styles = StyleSheet.create({
   chip: {
+    backgroundColor: colors.insetPanel,
+    borderRadius: 3,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
-    overflow: 'hidden',
-    // Physical raised shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.20,
-    shadowRadius: 2,
-    elevation: 2,
-    // Bottom shadow edge (shadow base)
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.18)',
   },
   chipSm: {
     height: 20,
-    paddingHorizontal: 8,
-    borderRadius: 6,
+    paddingHorizontal: 6,
   },
   chipMd: {
     height: 24,
-    paddingHorizontal: 10,
-    borderRadius: 7,
-  },
-  // Top highlight stripe overlay
-  highlightEdge: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.28)',
+    paddingHorizontal: 8,
   },
   label: {
-    fontFamily: typography.fontFamily.bodyBold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    fontFamily: typography.fontFamily.bodyMedium,
+    letterSpacing: typography.letterSpacing.label,
   },
-  labelSm: { fontSize: 10 },
-  labelMd: { fontSize: 12 },
-  emojiSm: { fontSize: 12 },
-  emojiMd: { fontSize: 14 },
+  labelSm: { fontSize: 9 },
+  labelMd: { fontSize: 10 },
 });
+
+

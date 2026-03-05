@@ -1,8 +1,12 @@
 /**
- * Home Tab — Discover
+ * Discover Tab — Field Naturalist Edition v2
  *
- * BioField Scanner MK-II — skeuomorphic landing screen.
- * Dark device chrome SafeAreaView, parchment scrollable content.
+ * Field Log landing screen:
+ * - forestFloor dark header with ANÍLOG wordmark (Space Mono amberGlow)
+ * - Stat chips: symbol + value (bold) + label (muted mono) — three separate elements
+ * - Section rules: mono label + extending inkRule line
+ * - Activity panel: parchment bg, 2px left-border accent, Playfair italic message
+ * - Recent specimens: horizontal compact-card carousel
  */
 
 import React from 'react';
@@ -11,7 +15,7 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,261 +31,260 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const COMPACT_CARD_WIDTH = SCREEN_WIDTH * 0.60;
 
 const STAT_CHIPS = [
-  { label: `${MOCK_USER.totalCaught} CAUGHT`, icon: '🎯' },
-  { label: `${MOCK_USER.uniqueSpecies} SPECIES`, icon: '🦎' },
-  { label: `${MOCK_USER.regionsExplored} REGIONS`, icon: '🌍' },
+  { symbol: '⊙', value: String(MOCK_USER.totalCaught),    label: 'CAUGHT' },
+  { symbol: '⬡', value: String(MOCK_USER.uniqueSpecies),  label: 'SPECIES' },
+  { symbol: '▲', value: String(MOCK_USER.regionsExplored), label: 'REGIONS' },
 ];
 
-export default function HomeScreen() {
-  function handleCardPress(animon: Animon) {
+function SectionRule({ label }: { label: string }) {
+  return (
+    <View style={styles.sectionRule}>
+      <Text style={styles.sectionRuleLabel}>{label}</Text>
+      <View style={styles.sectionRuleLine} />
+    </View>
+  );
+}
+
+export default function DiscoverScreen() {
+  const handleCardPress = (animon: Animon) => {
     router.push(`/animon/${animon.id}`);
-  }
+  };
 
   return (
-    <SafeAreaView style={styles.deviceFrame} edges={['top']}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      {/* ── Dark header ── */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.wordmark}>ANÍLOG</Text>
+          <Text style={styles.screenTitle}>Field Log</Text>
+        </View>
+        <Text style={styles.headerDate}>
+          {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()}
+        </Text>
+      </View>
+
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Bezel illusion strip */}
-        <View style={styles.bezelStrip} />
-
-        {/* ── Header ────────────────────────────────────────────── */}
-        <View style={styles.header}>
-          <Text style={styles.wordmark}>ANÍLOG</Text>
-          <Text style={styles.heading}>Discover</Text>
-          <Text style={styles.greeting}>Good morning, Trainer</Text>
+        {/* ── Stat chips ── */}
+        <View style={styles.statRow}>
+          {STAT_CHIPS.map((chip) => (
+            <View key={chip.label} style={styles.statChip}>
+              <Text style={styles.statSymbol}>{chip.symbol}</Text>
+              <Text style={styles.statValue}>{chip.value}</Text>
+              <Text style={styles.statLabel}>{chip.label}</Text>
+            </View>
+          ))}
         </View>
 
-        {/* ── Stats bar ─────────────────────────────────────────── */}
+        {/* ── Activity panel ── */}
+        <SectionRule label="NEARBY ACTIVITY" />
+        <View style={styles.activityPanel}>
+          {NEARBY_ACTIVITY.map((item) => (
+            <View
+              key={item.id}
+              style={[
+                styles.activityItem,
+                { borderLeftColor: colors.rarity[item.rarity as AnimonRarity] ?? colors.inkRule },
+              ]}
+            >
+              <Text style={styles.activityMessage}>{item.message}</Text>
+              <View style={styles.activityMeta}>
+                <Text style={styles.activityRegion}>{item.region}</Text>
+                <Text style={styles.activityAgo}>{item.ago}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {/* ── Recent specimens horizontal scroll ── */}
+        <SectionRule label="RECENT SPECIMENS" />
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.statsRow}
+          contentContainerStyle={styles.recentScroll}
         >
-          {STAT_CHIPS.map((chip) => (
-            <View key={chip.label} style={styles.statChip}>
-              <Text style={styles.statIcon}>{chip.icon}</Text>
-              <Text style={styles.statLabel}>{chip.label}</Text>
+          {MOCK_RECENT.map((animon) => (
+            <View key={animon.id} style={{ width: COMPACT_CARD_WIDTH, marginRight: 12 }}>
+              <AnimonCard
+                animon={animon}
+                compact
+                onPress={handleCardPress}
+              />
             </View>
           ))}
         </ScrollView>
 
-        {/* ── Recently Caught ───────────────────────────────────── */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>RECENTLY CAUGHT</Text>
-          <TouchableOpacity onPress={() => router.push('/(tabs)/anilog')}>
-            <Text style={styles.seeAll}>SEE ALL →</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.sectionRule} />
-
-        {/* Carousel — parent must declare height: 140 to prevent stretch */}
-        <View style={{ height: 140 }}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.recentRow}
-            decelerationRate="fast"
-            snapToInterval={COMPACT_CARD_WIDTH + 12}
-            snapToAlignment="start"
-          >
-            {MOCK_RECENT.map((animon) => (
-              <View key={animon.id} style={{ width: COMPACT_CARD_WIDTH, height: 140 }}>
-                <AnimonCard
-                  animon={animon}
-                  compact
-                  onPress={handleCardPress}
-                />
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* ── Nearby Activity ───────────────────────────────────── */}
-        <View style={[styles.sectionHeader, { marginTop: 20 }]}>
-          <Text style={styles.sectionTitle}>NEARBY ACTIVITY</Text>
-        </View>
-        <View style={styles.sectionRule} />
-
-        <View style={styles.activityPanel}>
-          {NEARBY_ACTIVITY.map((item, idx) => (
-            <React.Fragment key={item.id}>
-              {idx > 0 && <View style={styles.activitySeparator} />}
-              <View style={styles.activityItem}>
-                <View
-                  style={[
-                    styles.rarityDot,
-                    { backgroundColor: colors.rarity[item.rarity as AnimonRarity] },
-                    { shadowColor: colors.rarity[item.rarity as AnimonRarity] },
-                  ]}
-                />
-                <View style={styles.activityText}>
-                  <Text style={styles.activityMessage}>{item.message}</Text>
-                  <Text style={styles.activityMeta}>
-                    {item.region} · {item.ago}
-                  </Text>
-                </View>
-              </View>
-            </React.Fragment>
+        {/* ── Full grid ── */}
+        <SectionRule label="ALL SPECIMENS" />
+        <View style={styles.grid}>
+          {MOCK_ANIMONS.map((animon) => (
+            <View key={animon.id} style={styles.gridItem}>
+              <AnimonCard animon={animon} onPress={handleCardPress} />
+            </View>
           ))}
         </View>
-
-        <View style={{ height: 32 }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
+const GRID_SPACING = 12;
+const GRID_COLS = 2;
+const GRID_ITEM_WIDTH =
+  (SCREEN_WIDTH - GRID_SPACING * 3) / GRID_COLS;
+
 const styles = StyleSheet.create({
-  deviceFrame: {
+  safeArea: {
     flex: 1,
     backgroundColor: colors.deviceBody,
   },
-  scroll: {
-    flex: 1,
-    backgroundColor: colors.screenBg,
-  },
-  scrollContent: {
-    paddingBottom: 16,
-  },
-  bezelStrip: {
-    height: 8,
-    backgroundColor: colors.deviceBezel,
-  },
-  // Header
+
+  // Dark forestFloor header
   header: {
+    backgroundColor: colors.forestFloor,
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    backgroundColor: colors.screenBg,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
   },
   wordmark: {
-    fontFamily: typography.fontFamily.bodyMedium,
-    fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
-    letterSpacing: 3,
-    textTransform: 'uppercase',
-    marginBottom: 4,
-  },
-  heading: {
-    fontFamily: typography.fontFamily.headingBold,
-    fontSize: typography.fontSize['3xl'],
-    color: colors.textPrimary,
-    lineHeight: typography.fontSize['3xl'] * 1.15,
-  },
-  greeting: {
-    fontFamily: typography.fontFamily.body,
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
-    marginTop: 4,
-  },
-  // Stats
-  statsRow: {
-    paddingHorizontal: 20,
-    gap: 10,
-    paddingBottom: 20,
-  },
-  statChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.deviceBezel,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: colors.metalBrush,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.40,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  statIcon: { fontSize: 16 },
-  statLabel: {
     fontFamily: typography.fontFamily.mono,
     fontSize: typography.fontSize.sm,
-    color: colors.amberReadout,
-  },
-  // Section headers
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    fontFamily: typography.fontFamily.bodyMedium,
-    fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
-    letterSpacing: 2,
+    color: colors.amberGlow,
+    letterSpacing: 4,
     textTransform: 'uppercase',
   },
-  seeAll: {
-    fontFamily: typography.fontFamily.bodyBold,
-    fontSize: 12,
-    color: colors.scannerGreenLight,
+  screenTitle: {
+    fontFamily: typography.fontFamily.heading,
+    fontStyle: 'italic',
+    fontSize: typography.fontSize['3xl'],
+    color: colors.inkInverse,
+    lineHeight: typography.fontSize['3xl'] * typography.lineHeight.heading,
   },
-  sectionRule: {
-    height: 1,
-    backgroundColor: colors.surfaceInset,
-    marginHorizontal: 20,
-    marginBottom: 12,
+  headerDate: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: typography.fontSize.xs,
+    color: colors.amberResin,
+    textAlign: 'right',
   },
-  recentRow: {
-    paddingLeft: 20,
-    gap: 12,
-    paddingRight: 20,
-  },
-  // Activity panel
-  activityPanel: {
-    backgroundColor: colors.surfacePanel,
-    borderRadius: 16,
-    marginHorizontal: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.surfaceBorder,
-    shadowColor: '#1A0F00',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  activitySeparator: {
-    height: 1,
-    backgroundColor: colors.surfaceInset,
-  },
-  activityItem: {
+
+  scroll: { flex: 1, backgroundColor: colors.specimenCream },
+  scrollContent: { paddingBottom: 32 },
+
+  // Stat chips
+  statRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    backgroundColor: colors.parchment,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.inkRule,
     paddingVertical: 12,
-    gap: 12,
+    paddingHorizontal: 16,
+    gap: 0,
+    justifyContent: 'space-around',
   },
-  rarityDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.70,
-    shadowRadius: 4,
-  },
-  activityText: {
+  statChip: {
+    alignItems: 'center',
     flex: 1,
     gap: 2,
   },
+  statSymbol: {
+    fontSize: typography.fontSize.lg,
+    color: colors.inkBrown,
+  },
+  statValue: {
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: typography.fontSize.md,
+    color: colors.inkBlack,
+    lineHeight: typography.fontSize.md * typography.lineHeight.label,
+  },
+  statLabel: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: 9,
+    color: colors.inkFaded,
+    letterSpacing: typography.letterSpacing.label,
+  },
+
+  // Section rule: mono label + extending line
+  sectionRule: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 10,
+    gap: 8,
+  },
+  sectionRuleLabel: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: 10,
+    color: colors.inkFaded,
+    letterSpacing: typography.letterSpacing.label,
+  },
+  sectionRuleLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.inkRule,
+  },
+
+  // Activity panel
+  activityPanel: {
+    marginHorizontal: 16,
+    backgroundColor: colors.parchment,
+    borderWidth: 1,
+    borderColor: colors.inkRule,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  activityItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.inkRule,
+    borderLeftWidth: 2,
+    // borderLeftColor set inline per item (rarity colour)
+    gap: 4,
+  },
   activityMessage: {
-    fontFamily: typography.fontFamily.bodyMedium,
-    fontSize: 14,
-    color: colors.textPrimary,
-    lineHeight: 20,
+    fontFamily: typography.fontFamily.heading,
+    fontStyle: 'italic',
+    fontSize: typography.fontSize.base,
+    color: colors.inkBlack,
+    lineHeight: typography.fontSize.base * typography.lineHeight.normal,
   },
   activityMeta: {
-    fontFamily: typography.fontFamily.body,
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 2,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  activityRegion: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: typography.fontSize.xs,
+    color: colors.inkFaded,
+  },
+  activityAgo: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: typography.fontSize.xs,
+    color: colors.inkFaded,
+  },
+
+  // Recent carousel
+  recentScroll: {
+    paddingHorizontal: 16,
+    paddingBottom: 4,
+  },
+
+  // Full grid
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: GRID_SPACING,
+    gap: GRID_SPACING,
+  },
+  gridItem: {
+    width: GRID_ITEM_WIDTH,
   },
 });
+

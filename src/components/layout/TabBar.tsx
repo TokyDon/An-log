@@ -1,8 +1,13 @@
-/**
- * TabBar
+﻿/**
+ * TabBar â€” Field Naturalist Edition v2
  *
- * Skeuomorphic device control panel — BioField Scanner MK-II bottom edge.
- * Dark bezel, brushed-metal top border, LED status dots, raised camera disc.
+ * Physical instrument panel aesthetic:
+ * - deviceBezel background (dark)
+ * - 2px instrumentBrass top border (not metalBrush)
+ * - Amber LED indicator dots (4px) â€” NOT green LEDs
+ * - Icons: âŠ™ / âŠž / â—ˆ / â—‰  (âŠž for AnÃ­log = grid/collection)
+ * - Camera disc: text aperture character, not emoji
+ * - amberGlow active state for icons + labels
  */
 
 import React from 'react';
@@ -14,10 +19,10 @@ import { colors } from '../../constants/colors';
 import { typography } from '../../constants/typography';
 
 const TAB_CONFIG: Record<string, { icon: string; label: string }> = {
-  index:      { icon: '⊙', label: 'DISCOVER' },
-  anilog:     { icon: '⊛', label: 'ANÍLOG' },
-  milestones: { icon: '◈', label: 'MILESTONES' },
-  profile:    { icon: '◉', label: 'PROFILE' },
+  index:      { icon: 'âŠ™', label: 'DISCOVER' },
+  anilog:     { icon: 'âŠž', label: 'ANÃLOG' },
+  milestones: { icon: 'â—ˆ', label: 'MILESTONES' },
+  profile:    { icon: 'â—‰', label: 'PROFILE' },
 };
 
 export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
@@ -25,9 +30,11 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
-      {/* Rivet detail — top-left */}
+      {/* 2px brass top rule */}
+      <View style={styles.brassRule} />
+
+      {/* Rivet details â€” physical panel feel */}
       <View style={styles.rivetLeft} />
-      {/* Rivet detail — top-right */}
       <View style={styles.rivetRight} />
 
       {/* Left two tabs */}
@@ -41,23 +48,25 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         />
       ))}
 
-      {/* Centre elevated camera button */}
+      {/* Centre camera disc */}
       <View style={styles.cameraGap}>
         <TouchableOpacity
           style={styles.cameraButton}
           onPress={() => router.push('/camera')}
           activeOpacity={0.82}
         >
-          <Text style={styles.cameraIcon}>📷</Text>
+          {/* Aperture text character â€” not emoji */}
+          <Text style={styles.cameraAperture}>â—Ž</Text>
+          <Text style={styles.cameraLabel}>SCAN</Text>
         </TouchableOpacity>
       </View>
 
       {/* Right two tabs */}
-      {state.routes.slice(2, 4).map((route, index) => (
+      {state.routes.slice(2).map((route, index) => (
         <TabItem
           key={route.key}
           route={route}
-          isFocused={state.index === index + 2}
+          isFocused={state.index === (index + 2)}
           onPress={() => navigation.navigate(route.name)}
           descriptors={descriptors}
         />
@@ -66,45 +75,45 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   );
 }
 
-function TabItem({
-  route,
-  isFocused,
-  onPress,
-  descriptors,
-}: {
+interface TabItemProps {
   route: { key: string; name: string };
   isFocused: boolean;
   onPress: () => void;
   descriptors: BottomTabBarProps['descriptors'];
-}) {
+}
+
+function TabItem({ route, isFocused, onPress }: TabItemProps) {
   const config = TAB_CONFIG[route.name];
-  const label = config?.label ?? route.name.toUpperCase();
-  const icon = config?.icon ?? '·';
+  if (!config) return null;
 
   return (
     <TouchableOpacity
-      style={[styles.tab, isFocused && styles.tabActive]}
+      style={styles.tab}
       onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={isFocused ? { selected: true } : {}}
+      activeOpacity={0.75}
     >
-      {/* LED dot */}
-      <View style={[styles.led, isFocused && styles.ledActive]} />
+      {/* Amber LED indicator dot */}
+      <View
+        style={[
+          styles.ledDot,
+          isFocused ? styles.ledActive : styles.ledInactive,
+        ]}
+      />
       <Text
         style={[
           styles.tabIcon,
-          isFocused ? styles.tabIconActive : styles.tabIconInactive,
+          isFocused ? styles.iconActive : styles.iconInactive,
         ]}
       >
-        {icon}
+        {config.icon}
       </Text>
       <Text
         style={[
           styles.tabLabel,
-          isFocused ? styles.tabLabelActive : styles.tabLabelInactive,
+          isFocused ? styles.labelActive : styles.labelInactive,
         ]}
       >
-        {label}
+        {config.label}
       </Text>
     </TouchableOpacity>
   );
@@ -112,95 +121,114 @@ function TabItem({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
     backgroundColor: colors.deviceBezel,
-    borderTopWidth: 2,
-    borderTopColor: colors.metalBrush,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     paddingTop: 10,
-    minHeight: 72,
+    // Brass rule replaces borderTopWidth here â€” rendered as child View
     position: 'relative',
   },
-  // Rivet decorations
+
+  // 2px instrumentBrass rule at top of bar
+  brassRule: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: colors.instrumentBrass,
+  },
+
+  // Rivet details â€” small circles near top corners
   rivetLeft: {
     position: 'absolute',
-    top: 7,
-    left: 10,
+    top: 6,
+    left: 12,
     width: 5,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: colors.metalBrushLight,
+    backgroundColor: colors.instrumentBrassLight,
   },
   rivetRight: {
     position: 'absolute',
-    top: 7,
-    right: 10,
+    top: 6,
+    right: 12,
     width: 5,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: colors.metalBrushLight,
+    backgroundColor: colors.instrumentBrassLight,
   },
-  // Tab items
+
+  // Tab item
   tab: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: 4,
+    paddingTop: 6,
+    paddingBottom: 4,
     gap: 3,
   },
-  tabActive: {
-    borderTopWidth: 2,
-    borderTopColor: colors.scannerGreenGlow,
-    marginTop: -2,
-  },
-  // LED dot
-  led: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: colors.deviceBody,
+
+  // Amber LED dot
+  ledDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
     marginBottom: 2,
   },
   ledActive: {
-    backgroundColor: colors.scannerGreenGlow,
-    shadowColor: colors.scannerGreenGlow,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.85,
-    shadowRadius: 6,
+    backgroundColor: colors.amberGlow,
+    // Subtle glow simulation via opacity â€” native shadow not reliable in a tab bar
+    opacity: 1,
   },
+  ledInactive: {
+    backgroundColor: colors.inkFaded,
+    opacity: 0.35,
+  },
+
+  // Icon character
   tabIcon: {
     fontSize: 18,
   },
-  tabIconActive: { color: colors.scannerGreenGlow },
-  tabIconInactive: { color: colors.metalBrushLight },
+  iconActive:   { color: colors.amberGlow },
+  iconInactive: { color: colors.inkFaded },
+
+  // Label
   tabLabel: {
-    fontFamily: typography.fontFamily.bodyBold,
-    fontSize: 10,
-    letterSpacing: 0.5,
+    fontFamily: typography.fontFamily.mono,
+    fontSize: 8,
+    letterSpacing: typography.letterSpacing.wide,
   },
-  tabLabelActive: { color: colors.scannerGreenGlow },
-  tabLabelInactive: { color: colors.metalBrushLight },
+  labelActive:   { color: colors.amberGlow },
+  labelInactive: { color: colors.inkFaded },
+
   // Camera disc
   cameraGap: {
     width: 72,
     alignItems: 'center',
-    justifyContent: 'flex-start',
     paddingTop: 0,
   },
   cameraButton: {
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: colors.scannerGreen,
+    backgroundColor: colors.forestFloor,
+    borderWidth: 2,
+    borderColor: colors.instrumentBrass,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -18,
-    borderWidth: 2,
-    borderColor: colors.scannerGreenGlow,
-    shadowColor: colors.scannerGreenGlow,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.60,
-    shadowRadius: 8,
-    elevation: 12,
+    marginTop: -16,  // raises disc above bar surface
+    gap: 1,
   },
-  cameraIcon: { fontSize: 24 },
+  cameraAperture: {
+    fontSize: 22,
+    color: colors.amberGlow,
+  },
+  cameraLabel: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: 7,
+    color: colors.amberFaint,
+    letterSpacing: typography.letterSpacing.label,
+  },
 });
+
+
