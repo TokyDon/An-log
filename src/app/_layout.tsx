@@ -17,6 +17,8 @@ import {
   DMSans_700Bold,
 } from '@expo-google-fonts/dm-sans';
 import * as SplashScreen from 'expo-splash-screen';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import '../../global.css';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -46,12 +48,14 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="camera" options={{ presentation: 'fullScreenModal' }} />
-        <Stack.Screen name="animon/[id]" options={{ presentation: 'card' }} />
-      </Stack>
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="camera" options={{ presentation: 'fullScreenModal' }} />
+          <Stack.Screen name="animon/[id]" options={{ presentation: 'card' }} />
+        </Stack>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }

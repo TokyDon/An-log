@@ -2,6 +2,7 @@
   "expo": {
     "name": "Anílog",
     "slug": "anilog",
+    "scheme": "anilog",
     "version": "0.1.0",
     "description": "Catch them for real.",
     "orientation": "portrait",
@@ -47,7 +48,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow Anílog to record your general region when capturing animals."
         }
-      ]
+      ],
+      "expo-router"
     ],
     "extra": {
       "eas": {
