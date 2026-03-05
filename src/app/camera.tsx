@@ -43,6 +43,7 @@ type CaptureState = 'idle' | 'scanning' | 'result';
 
 export default function CameraScreen() {
   const [captureState, setCaptureState] = useState<CaptureState>('idle');
+  const [flashOn, setFlashOn] = useState(false);
 
   // Scan line Y offset (within reticle)
   const scanY = useSharedValue(0);
@@ -186,7 +187,7 @@ export default function CameraScreen() {
               colors={
                 captureState === 'scanning'
                   ? ['#3A3530', '#2C2416', '#3A3530']
-                  : ['#D4AF37', '#FFD700', '#B8860B', '#FFD700', '#D4AF37']
+                  : [colors.amberDeep, colors.amberResin, colors.amberGlow, colors.amberResin, colors.amberDeep]
               }
               style={styles.shutterOuter}
             >
@@ -195,8 +196,8 @@ export default function CameraScreen() {
           </TouchableOpacity>
 
           {/* Flash toggle */}
-          <TouchableOpacity style={styles.flashToggle}>
-            <Text style={styles.flashIcon}>⚡</Text>
+          <TouchableOpacity style={styles.flashToggle} onPress={() => setFlashOn((f) => !f)}>
+            <Text style={styles.flashIcon}>{flashOn ? '★F' : 'F'}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -232,7 +233,7 @@ export default function CameraScreen() {
 
         <View style={styles.resultRarity}>
           <RarityBadge rarity={MOCK_RESULT.rarity} size="lg" />
-          <Text style={styles.resultRegion}>📍 {MOCK_RESULT.region}</Text>
+          <Text style={[styles.resultRegion, { color: colors.amberResin }]}>◉ {MOCK_RESULT.region}</Text>
         </View>
 
         <View style={styles.resultActions}>
@@ -251,14 +252,14 @@ export default function CameraScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F0A05',
+    backgroundColor: colors.deviceBezel,
   },
   viewfinder: {
     ...StyleSheet.absoluteFillObject,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.48)',
+    backgroundColor: colors.overlayDark,
   },
 
   // Reticle

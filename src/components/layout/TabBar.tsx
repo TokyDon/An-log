@@ -177,8 +177,11 @@ const styles = StyleSheet.create({
   },
   ledActive: {
     backgroundColor: colors.amberGlow,
-    // Subtle glow simulation via opacity â€” native shadow not reliable in a tab bar
     opacity: 1,
+    shadowColor: colors.amberGlow,
+    shadowRadius: 5,
+    shadowOpacity: 0.9,
+    elevation: 3,
   },
   ledInactive: {
     backgroundColor: colors.inkFaded,

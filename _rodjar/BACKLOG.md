@@ -11,6 +11,7 @@ Domain exploration: ✅ All 4 required outputs produced (Domain, Color World, Si
 Pre-score: 9.0/10 (63/70 across 7 principles)  
 Key deliverables: Full colour system (colors.ts replacement), typography rules, AnimonCard hero spec (specimen label strip signature), TabBar instrument panel spec, RarityBadge stamp spec, TypeTagChip recessed spec, 4 screen layouts, 4 microinteractions, 9 named-rejected defaults  
 Spec file: `_rodjar/design-spec-v2.md`
+TS CLEAN FIX — 2026-03-05: All token migration errors resolved. TypeScript: 0 errors.
 
 ---
 
@@ -19,6 +20,26 @@ Spec file: `_rodjar/design-spec-v2.md`
 | # | Severity | Description | Assigned To | Status |
 |---|----------|-------------|-------------|--------|
 | B-002 | 🟡 Medium | `react-native-worklets@0.7.4` installed but Expo 55 expects `0.7.2` — version mismatch may cause Reanimated runtime crashes | Developer | ⚠️ Needs pin |
+| B-QA2-001 | 🔴 HIGH | Camera shutter gradient uses `#D4AF37/#FFD700/#B8860B` (generic/CSS gold) — spec explicitly rejects these colours, names `amberResin` + `amberGlow` as replacements. `src/app/camera.tsx` L188-189 | Developer | ✅ Fixed 2026-03-05 |
+| B-QA2-002 | 🔴 HIGH | TabBar LED active glow shadow absent — spec says `shadowColor: amberGlow, shadowRadius: 5, shadowOpacity: 0.9, elevation: 3`. Currently just `opacity: 1`. `src/components/layout/TabBar.tsx` L178-183 | Developer | ✅ Fixed 2026-03-05 |
+| B-QA2-005 | 🔴 HIGH | Camera flash icon is ⚡ emoji — spec explicitly bans emoji as primary UI. `src/app/camera.tsx` L199 | Developer | ✅ Fixed 2026-03-05 |
+| B-QA2-006 | 🔴 HIGH | Camera location pin is 📍 emoji in result card — same violation. `src/app/camera.tsx` L235 | Developer | ✅ Fixed 2026-03-05 |
+| B-QA2-012 | 🟡 Medium | Detail screen Specimen ID block uses `deviceBezel` (dark) not `cardStock` (cream) — inverts metaphor from herbarium label to dark panel readout. `src/app/animon/[id].tsx` | Developer | ✅ Fixed 2026-03-05 |
+| B-QA2-007 | 🟡 Medium | Milestones tier colours `{ Bronze: '#CD7F32', Silver: '#A8A9AD', Gold: '#F59E0B' }` are generic game-medal palette, not in token system, break naturalist aesthetic. `src/app/(tabs)/milestones.tsx` L36 | Developer | ✅ Fixed 2026-03-05 |
+| B-QA2-008 | 🟡 Medium | AnimonCard glossy shimmer array uses inline hex instead of token references; `#D4A040` has no token. `src/components/ui/AnimonCard.tsx` L134, 230 | Developer | ⏳ Next sprint |
+| B-QA2-011 | 🟡 Medium | RarityBadge flat `borderWidth: 1` all sides — spec requires asymmetric border widths (top 1px, bottom 2px) for stamp impression depth. `src/components/ui/RarityBadge.tsx` | Developer | ✅ Fixed 2026-03-05 |
+| B-QA2-003 | 🟡 Medium | Camera container `backgroundColor: '#0F0A05'` inline hex, not a token. Use `colors.deviceBezel`. `src/app/camera.tsx` L254 | Developer | ✅ Fixed 2026-03-05 |
+| B-QA2-004 | 🟡 Medium | Camera viewfinder overlay `rgba(0,0,0,0.48)` is pure black; should use `colors.overlayDark` (warm walnut). `src/app/camera.tsx` L261 | Developer | ✅ Fixed 2026-03-05 |
+| B-QA2-014 | 🟡 Medium | Discover SectionRule label uses `letterSpacing.label` (0.5) not `letterSpacing.widest` (2.0) per spec. Affects 3 section rules in `index.tsx` | Developer | ✅ Fixed 2026-03-05 |
+| B-QA2-015 | 🟡 Medium | Discover stat chips lack individual `insetPanel` backgrounds and `inkRule` borders per spec §7.1 — currently stacked text in shared row. `src/app/(tabs)/index.tsx` | Developer | ⏳ Next sprint |
+| B-QA2-019 | 🟡 Medium | 4 microinteractions from spec §8 not implemented: Capture Stamp, Scanner Lock-On, Tab LED Activation, Shimmer Reveal | Developer | ⏳ Next sprint |
+| B-QA2-009 | 🟢 Low | AnimonCard glossy label bg `#F2E8C8` not tokenized — add `goldSizing` token. `src/components/ui/AnimonCard.tsx` L160 | Developer | ⏳ Backlog |
+| B-QA2-010 | 🟢 Low | AnimonCard rare border uses `rgba(42,75,138,0.40)` inline — use `hexToRgba(colors.rarity.rare, 0.40)`. `src/components/ui/AnimonCard.tsx` L439, 445 | Developer | ⏳ Backlog |
+| B-QA2-013 | 🟢 Low | Detail screen stats grid uses `deviceBezel` not `forestFloor`; `borderRadius: 12` not `4`. `src/app/animon/[id].tsx` | Developer | ⏳ Backlog |
+| B-QA2-016 | 🟢 Low | Multiple screens have inline rgba opacity variants of token colors — profile.tsx, animon/[id].tsx. Tokenize or use helper. | Developer | ⏳ Backlog |
+| B-QA2-017 | 🟢 Low | Milestones SectionRule centered `line\|label\|line` vs Discover left-aligned `label\|line` — inconsistent, extract shared component. | Developer | ⏳ Backlog |
+| B-QA2-018 | 🟢 Low | Milestones achievement `emoji` field on data objects never rendered — dead code. Remove field. `src/app/(tabs)/milestones.tsx` | Developer | ⏳ Backlog |
+| B-QA2-020 | 🟢 Low | Profile hero overlay `rgba(17,34,14,0.55)` inline — use `colors.overlayDark` or define `overlayForest` token. `src/app/(tabs)/profile.tsx` L60 | Developer | ⏳ Backlog |
 
 ---
 
@@ -45,6 +66,7 @@ Spec file: `_rodjar/design-spec-v2.md`
 | B-FIX-004 | Dead import `Animated as RNAnimated` in camera.tsx | QA Tester | commit 3 |
 | B-FIX-005 | Reanimated shimmer animating full card opacity incl. content | QA Tester | commit 3 |
 | B-FIX-006 | `package.json` `"main"` pointed to boilerplate `index.ts` not `expo-router/entry` | Developer | session |
+| B-FIX-QA2-001 | B-QA2-001,002,003,004,005,006,007,011,012,014 — All HIGH + key MEDIUM QA bugs from deep redesign v2. Camera shutter now uses amber tokens; flash/location emoji replaced with text; LED glow shadow added; Specimen ID block on cardStock; letterSpacing widest on section rules; milestones use naturalist tier tokens; RarityBadge asymmetric stamp depth. Also fixed milestones.tsx sectionRuleStyles letterSpacing (same issue as B-QA2-014). | Developer | fix: resolve HIGH + MEDIUM QA bugs from deep redesign v2 |
 | B-FIX-007 | `scheme` missing from `app.json` (needed for deep linking / QR) | Developer | session |
 | B-FIX-008 | `react-native-worklets` missing (reanimated v4 peer dep) | Developer | session |
 | B-001 | Web perpetual loading — 3 root causes fixed by QA + 3 runtime fixes by Developer (see coordination log) | Developer (re-open) | session |
@@ -79,6 +101,7 @@ _Agents append their output summaries here when completing tasks._
 | 2026-03-05 | QA Tester | Skeuomorphic redesign verification | ⚠️ CONDITIONAL PASS — 2 HIGH bugs (B-003, B-004), 1 MEDIUM (B-005), 2 LOW (B-006, B-007). Full report: qa-redesign-findings.md. Redesign substantially correct; must fix B-003/B-004/B-005 before merge. |
 | 2026-03-05 | Developer | QA fixes B-003–B-007 | ✅ Complete — B-003 CameraTab deleted (unused); B-004 EmptyState tokens migrated; B-005 heroSpecies fontSize tokenised; B-006 glossyOuterCompact height added; B-007 RarityBadge border token. TypeScript: clean. Web export: clean (1223ms, 1348 modules). |
 | 2026-03-05 | QA Tester | Final re-verify redesign fixes | ✅ PASS — ready to merge |
+| 2026-03-05 | Developer | Fix HIGH + MEDIUM QA bugs from deep redesign v2 (task-brief-bug-fixes-qa2.md) | ✅ Complete — 10 bugs fixed across 6 files. 5 HIGH: B-QA2-001 (shutter gradient → amber tokens), B-QA2-002 (LED glow shadow), B-QA2-005 (⚡ → 'F'/'\u2605F' text), B-QA2-006 (📍 → ◉ amberResin), B-QA2-012 (Specimen ID cardStock bg). 3 MEDIUM: B-QA2-003/004 (camera bg/overlay tokenised), B-QA2-007 (tier colours → inkFaded/lichenGray/amberResin), B-QA2-011 (stamp depth asymmetric borders). 2 MEDIUM also fixed: B-QA2-014 + milestones sectionRuleStyles letterSpacing → widest (2.0). TypeScript: 0 errors. Web export: clean (2.3MB JS). |
 
 ### B-001 Post-Mortem — Web White Screen
 

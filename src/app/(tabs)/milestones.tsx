@@ -33,7 +33,7 @@ const ACHIEVEMENTS = [
   { id: 'global_trainer', title: 'Global Trainer',   description: 'Catch Anímon on 5 continents',          emoji: '🌎', tier: 'Gold'   as const, unlocked: false },
 ];
 
-const TIER_COLORS = { Bronze: '#CD7F32', Silver: '#A8A9AD', Gold: '#F59E0B' };
+const TIER_COLORS = { Bronze: colors.inkFaded, Silver: colors.lichenGray, Gold: colors.amberResin };
 
 function SectionRule({ label }: { label: string }) {
   return (
@@ -58,7 +58,7 @@ const sectionRuleStyles = StyleSheet.create({
     fontFamily: typography.fontFamily.mono,
     fontSize: typography.fontSize.xs,
     color: colors.inkFaded,
-    letterSpacing: typography.letterSpacing.label,
+    letterSpacing: typography.letterSpacing.widest,
     textTransform: 'uppercase',
   },
 });

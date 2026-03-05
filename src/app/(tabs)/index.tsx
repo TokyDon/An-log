@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.mono,
     fontSize: 10,
     color: colors.inkFaded,
-    letterSpacing: typography.letterSpacing.label,
+    letterSpacing: typography.letterSpacing.widest,
   },
   sectionRuleLine: {
     flex: 1,

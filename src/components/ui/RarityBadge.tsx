@@ -25,8 +25,30 @@ interface RarityBadgeProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
+function mixWithWhite(hex: string, amount: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const nr = Math.min(255, Math.round(r + (255 - r) * amount));
+  const ng = Math.min(255, Math.round(g + (255 - g) * amount));
+  const nb = Math.min(255, Math.round(b + (255 - b) * amount));
+  return `#${nr.toString(16).padStart(2, '0')}${ng.toString(16).padStart(2, '0')}${nb.toString(16).padStart(2, '0')}`;
+}
+
+function mixWithBlack(hex: string, amount: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const nr = Math.max(0, Math.round(r * (1 - amount)));
+  const ng = Math.max(0, Math.round(g * (1 - amount)));
+  const nb = Math.max(0, Math.round(b * (1 - amount)));
+  return `#${nr.toString(16).padStart(2, '0')}${ng.toString(16).padStart(2, '0')}${nb.toString(16).padStart(2, '0')}`;
+}
+
 export function RarityBadge({ rarity, size = 'md' }: RarityBadgeProps) {
   const rarityColor = colors.rarity[rarity];
+  const topBorderColor = mixWithWhite(rarityColor, 0.20);
+  const bottomBorderColor = mixWithBlack(rarityColor, 0.20);
 
   const sizeStyle =
     size === 'sm' ? styles.badgeSm :
@@ -42,7 +64,12 @@ export function RarityBadge({ rarity, size = 'md' }: RarityBadgeProps) {
     <View
       style={[
         styles.badge,
-        { borderColor: rarityColor },
+        {
+          borderTopColor: topBorderColor,
+          borderBottomColor: bottomBorderColor,
+          borderLeftColor: rarityColor,
+          borderRightColor: rarityColor,
+        },
         sizeStyle,
       ]}
     >
@@ -61,7 +88,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 4,
     borderBottomRightRadius: 2,
     borderBottomLeftRadius: 4,
-    borderWidth: 1,
+    borderTopWidth: 1,
+    borderBottomWidth: 2,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
