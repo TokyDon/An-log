@@ -1,13 +1,9 @@
 /**
  * Anímon Detail Screen
  *
- * Full-page detail for a captured Anímon.
+ * BioField Scanner MK-II — hero with gradient name overlay,
+ * data plate, stats grid, capture notes.
  * Route: /animon/[id]
- *
- * Layout:
- *   - Hero image (top ~55%)
- *   - Floating back button
- *   - Bottom sheet with species info, stats grid, region footer
  */
 
 import React from 'react';
@@ -20,6 +16,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { colors } from '../../constants/colors';
@@ -28,8 +25,8 @@ import { RarityBadge } from '../../components/ui/RarityBadge';
 import { TypeTagChip } from '../../components/ui/TypeTagChip';
 import { MOCK_ANIMONS } from '../../data/mockAnimons';
 
-const { width: W, height: H } = Dimensions.get('window');
-const HERO_HEIGHT = H * 0.50;
+const { height: H } = Dimensions.get('window');
+const HERO_HEIGHT = 280;
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', {
@@ -59,33 +56,35 @@ export default function AnimonDetailScreen() {
   }
 
   const STAT_GRID = [
-    { label: 'Gender',     value: genderLabel(animon.gender) },
-    { label: 'Colour',     value: animon.colour },
-    { label: 'Confidence', value: `${Math.round(animon.confidenceScore * 100)}%` },
-    { label: 'Caught',     value: formatDate(animon.capturedAt) },
+    { label: 'GENDER',     value: genderLabel(animon.gender) },
+    { label: 'COLOUR',     value: animon.colour },
+    { label: 'CONFIDENCE', value: `${Math.round(animon.confidenceScore * 100)}%` },
+    { label: 'CAUGHT',     value: formatDate(animon.capturedAt) },
   ];
 
   return (
     <View style={styles.container}>
       {/* ── Hero Image ──────────────────────────────────────────── */}
-      <View style={styles.hero}>
+      <View style={[styles.hero, { height: HERO_HEIGHT }]}>
         <Image
           source={{ uri: animon.photoUrl }}
-          style={styles.heroImage}
+          style={StyleSheet.absoluteFill}
           contentFit="cover"
           transition={200}
         />
-        {/* Gradient-style overlay at bottom of image */}
-        <View style={styles.heroOverlay} />
-
-        {/* Photo credit / location */}
-        <View style={styles.heroCredit}>
-          <Text style={styles.heroCreditText}>
-            📍 {animon.region}
+        {/* Gradient fade at bottom */}
+        <LinearGradient
+          colors={['transparent', 'rgba(26,18,8,0.88)']}
+          style={styles.heroGradient}
+        />
+        {/* Species name on gradient */}
+        <View style={styles.heroNameWrap}>
+          <Text style={styles.heroSpecies} numberOfLines={2}>
+            {animon.species}
           </Text>
-          <Text style={styles.heroCreditText}>
-            {formatDate(animon.capturedAt)}
-          </Text>
+          {animon.breed && (
+            <Text style={styles.heroBreed}>{animon.breed}</Text>
+          )}
         </View>
       </View>
 
@@ -98,41 +97,33 @@ export default function AnimonDetailScreen() {
 
       {/* ── Bottom Sheet ─────────────────────────────────────────── */}
       <ScrollView
-        style={styles.sheet}
+        style={[styles.sheet, { marginTop: HERO_HEIGHT - 28 }]}
         contentContainerStyle={styles.sheetContent}
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        {/* Drag handle */}
         <View style={styles.sheetHandle} />
 
-        {/* Species & breed */}
-        <View style={styles.nameRow}>
-          <View style={styles.nameBlock}>
-            <Text style={styles.speciesName} numberOfLines={2}>
-              {animon.species}
-            </Text>
-            {animon.breed && (
-              <Text style={styles.breedName}>{animon.breed}</Text>
-            )}
+        {/* Data plate: types + rarity + date */}
+        <View style={styles.dataPlate}>
+          <View style={styles.typesRow}>
+            {animon.types.map((t) => (
+              <TypeTagChip key={t} type={t} />
+            ))}
+            <RarityBadge rarity={animon.rarity} size="md" />
           </View>
-          <RarityBadge rarity={animon.rarity} size="md" />
+          <Text style={styles.dataDate}>
+            {formatDate(animon.capturedAt)} · {animon.region}
+          </Text>
         </View>
 
-        {/* Type chips */}
-        <View style={styles.typesRow}>
-          {animon.types.map((t) => (
-            <TypeTagChip key={t} type={t} />
-          ))}
+        {/* ID strip */}
+        <View style={styles.idStrip}>
+          <Text style={styles.idLabel}>SPECIMEN ID</Text>
+          <Text style={styles.idValue}>#{animon.id.padStart(4, '0')}</Text>
         </View>
 
-        {/* Rarity large badge + ID */}
-        <View style={styles.rarityRow}>
-          <RarityBadge rarity={animon.rarity} size="lg" />
-          <Text style={styles.animonId}>ID #{animon.id.padStart(4, '0')}</Text>
-        </View>
-
-        {/* Stats 2×2 grid */}
+        {/* Stats 2×2 grid — dark bezel panels */}
         <View style={styles.statsGrid}>
           {STAT_GRID.map((s) => (
             <View key={s.label} style={styles.statCell}>
@@ -142,11 +133,25 @@ export default function AnimonDetailScreen() {
           ))}
         </View>
 
-        {/* Region footer */}
-        <View style={styles.regionFooter}>
-          <Text style={styles.regionFooterText}>
-            📍 Captured in {animon.region}
-          </Text>
+        {/* Capture Notes card */}
+        <View style={styles.notesCard}>
+          <Text style={styles.notesTitle}>CAPTURE NOTES</Text>
+          <View style={styles.noteRow}>
+            <Text style={styles.noteKey}>REGION</Text>
+            <Text style={styles.noteVal}>{animon.region}</Text>
+          </View>
+          <View style={styles.noteSep} />
+          <View style={styles.noteRow}>
+            <Text style={styles.noteKey}>CONFIDENCE</Text>
+            <Text style={styles.noteVal}>
+              {Math.round(animon.confidenceScore * 100)}%
+            </Text>
+          </View>
+          <View style={styles.noteSep} />
+          <View style={styles.noteRow}>
+            <Text style={styles.noteKey}>CAPTURED</Text>
+            <Text style={styles.noteVal}>{formatDate(animon.capturedAt)}</Text>
+          </View>
         </View>
 
         <View style={{ height: 40 }} />
@@ -158,40 +163,47 @@ export default function AnimonDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.screenBg,
   },
+
   // Hero
   hero: {
-    height: HERO_HEIGHT,
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
+    overflow: 'hidden',
   },
-  heroImage: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  heroOverlay: {
+  heroGradient: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: 90,
-    backgroundColor: 'rgba(0,0,0,0.32)',
+    height: 130,
   },
-  heroCredit: {
+  heroNameWrap: {
     position: 'absolute',
-    bottom: 14,
-    left: 16,
-    right: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    bottom: 20,
+    left: 20,
+    right: 20,
   },
-  heroCreditText: {
-    fontFamily: typography.fontFamily.bodyMedium,
-    fontSize: typography.fontSize.xs,
-    color: 'rgba(255,255,255,0.9)',
+  heroSpecies: {
+    fontFamily: typography.fontFamily.headingBlack,
+    fontSize: typography.fontSize['3xl'],
+    fontStyle: 'italic',
+    color: colors.textInverse,
+    lineHeight: 36,
+    textShadowColor: 'rgba(0,0,0,0.50)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
+  heroBreed: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.fontSize.sm,
+    color: 'rgba(245,240,232,0.80)',
+    marginTop: 3,
+  },
+
   // Back button
   backSafe: {
     position: 'absolute',
@@ -205,127 +217,160 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: colors.surface,
+    backgroundColor: 'rgba(26,18,8,0.70)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
   },
   backIcon: {
     fontSize: 18,
-    color: colors.text.primary,
+    color: colors.textInverse,
     fontFamily: typography.fontFamily.bodyBold,
   },
+
   // Bottom sheet
   sheet: {
     flex: 1,
-    marginTop: HERO_HEIGHT - 28,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceCard,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
   sheetContent: {
-    padding: 24,
+    padding: 20,
     paddingTop: 12,
   },
   sheetHandle: {
     width: 40,
     height: 4,
-    backgroundColor: '#D1D5DB',
+    backgroundColor: colors.surfaceBorder,
     borderRadius: 2,
     alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: 18,
   },
-  nameRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 12,
+
+  // Data plate
+  dataPlate: {
     marginBottom: 14,
-  },
-  nameBlock: { flex: 1 },
-  speciesName: {
-    fontFamily: typography.fontFamily.heading,
-    fontSize: typography.fontSize['2xl'],
-    color: colors.text.primary,
-    lineHeight: typography.fontSize['2xl'] * 1.15,
-  },
-  breedName: {
-    fontFamily: typography.fontFamily.body,
-    fontSize: typography.fontSize.base,
-    color: colors.text.secondary,
-    marginTop: 4,
+    gap: 8,
   },
   typesRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 16,
-  },
-  rarityRow: {
-    flexDirection: 'row',
     alignItems: 'center',
+  },
+  dataDate: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: 11,
+    color: colors.textMuted,
+    letterSpacing: 0.8,
+  },
+
+  // ID strip
+  idStrip: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    alignItems: 'center',
+    backgroundColor: colors.deviceBezel,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.metalBrush,
   },
-  animonId: {
-    fontFamily: typography.fontFamily.bodyMedium,
-    fontSize: typography.fontSize.sm,
-    color: colors.text.secondary,
+  idLabel: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: 11,
+    color: colors.textMuted,
+    letterSpacing: 1.5,
   },
+  idValue: {
+    fontFamily: typography.fontFamily.monoBold,
+    fontSize: 16,
+    color: colors.amberReadout,
+    letterSpacing: 1,
+  },
+
   // Stats grid
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   statCell: {
     flex: 1,
     minWidth: '44%',
-    backgroundColor: colors.background,
-    borderRadius: 14,
+    height: 80,
+    backgroundColor: colors.deviceBezel,
+    borderRadius: 12,
     padding: 14,
-    gap: 4,
+    gap: 6,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.metalBrush,
   },
   statLabel: {
-    fontFamily: typography.fontFamily.body,
-    fontSize: typography.fontSize.xs,
-    color: colors.text.secondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    fontFamily: typography.fontFamily.mono,
+    fontSize: 10,
+    color: colors.textMuted,
+    letterSpacing: 1.5,
   },
   statValue: {
-    fontFamily: typography.fontFamily.bodyBold,
-    fontSize: typography.fontSize.base,
-    color: colors.text.primary,
+    fontFamily: typography.fontFamily.monoBold,
+    fontSize: 17,
+    color: colors.amberReadout,
   },
-  // Region footer
-  regionFooter: {
-    backgroundColor: '#F0FDF4',
+
+  // Capture notes
+  notesCard: {
+    backgroundColor: colors.surfacePanel,
     borderRadius: 14,
-    padding: 14,
+    padding: 16,
+    gap: 0,
     borderWidth: 1,
-    borderColor: '#BBF7D0',
+    borderColor: colors.surfaceBorder,
   },
-  regionFooterText: {
+  notesTitle: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: 11,
+    color: colors.textMuted,
+    letterSpacing: 2,
+    marginBottom: 12,
+  },
+  noteRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+  },
+  noteSep: {
+    height: 1,
+    backgroundColor: colors.surfaceBorder,
+  },
+  noteKey: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: 11,
+    color: colors.textMuted,
+    letterSpacing: 1,
+  },
+  noteVal: {
     fontFamily: typography.fontFamily.bodyMedium,
     fontSize: typography.fontSize.sm,
-    color: colors.primary,
+    color: colors.textPrimary,
   },
+
   // Not found
   notFound: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.screenBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   notFoundText: {
     fontFamily: typography.fontFamily.body,
     fontSize: typography.fontSize.base,
-    color: colors.text.secondary,
+    color: colors.textSecondary,
   },
 });

@@ -41,6 +41,11 @@ _Maintained by Rodjar (Orchestrator). Agents read from and write status updates 
 | B-FIX-009 | Missing `GestureHandlerRootView` in `_layout.tsx` — crash on gesture handler context | Developer | session |
 | B-FIX-010 | Missing `metro.config.js` — NativeWind v4 CSS pipeline not wired to Metro | Developer | session |
 | B-FIX-011 | Missing `global.css` + import — NativeWind v4 had no CSS entry point | Developer | session |
+| B-003 | `CameraTab.tsx` used removed `colors.primary` token — deleted file (unused; TabBar renders own camera disc). Removed from `ui/index.ts` | Developer | see QA fixes commit |
+| B-004 | `EmptyState.tsx` tokens migrated: `colors.text.primary` → `colors.textPrimary`, `colors.text.secondary` → `colors.textSecondary`, `colors.primary` → `colors.scannerGreen` | Developer | see QA fixes commit |
+| B-005 | `animon/[id].tsx` `heroSpecies.fontSize` changed from hardcoded `32` to `typography.fontSize['3xl']` (36px) | Developer | see QA fixes commit |
+| B-006 | `AnimonCard.tsx` `glossyOuterCompact` given explicit `height: 140` for spec compliance | Developer | see QA fixes commit |
+| B-007 | `RarityBadge.tsx` `badgeCommon.borderColor` changed from inline `'#C8BFA8'` to `colors.surfaceBorder` token | Developer | see QA fixes commit |
 
 ---
 
@@ -58,6 +63,10 @@ _Agents append their output summaries here when completing tasks._
 | 2026-03-05 | QA Tester | Diagnose white screen (B-001) | ✅ Resolved — 3 root causes found & fixed (see below) |
 | 2026-03-05 | Developer | Fix B-001 re-open — perpetual loading (runtime causes) | ✅ Fixed — 3 runtime root causes resolved (see B-001 re-open post-mortem below) |
 | 2026-03-05 | QA Tester | Re-verify B-001 (qa-reverify-B-001.md) | ✅ VERIFIED RESOLVED — all checks passed (see re-verification report below) |
+| 2026-03-05 | UX/UI Designer | Skeuomorphic redesign spec | ✅ Complete — see design-spec-skeuomorphic.md |
+| 2026-03-05 | Developer | Skeuomorphic redesign implementation | ✅ Complete — see dev-task-redesign.md |
+| 2026-03-05 | QA Tester | Skeuomorphic redesign verification | ⚠️ CONDITIONAL PASS — 2 HIGH bugs (B-003, B-004), 1 MEDIUM (B-005), 2 LOW (B-006, B-007). Full report: qa-redesign-findings.md. Redesign substantially correct; must fix B-003/B-004/B-005 before merge. |
+| 2026-03-05 | Developer | QA fixes B-003–B-007 | ✅ Complete — B-003 CameraTab deleted (unused); B-004 EmptyState tokens migrated; B-005 heroSpecies fontSize tokenised; B-006 glossyOuterCompact height added; B-007 RarityBadge border token. TypeScript: clean. Web export: clean (1223ms, 1348 modules). |
 
 ### B-001 Post-Mortem — Web White Screen
 

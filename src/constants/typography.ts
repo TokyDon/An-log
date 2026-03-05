@@ -2,15 +2,20 @@
  * Anílog Design Token — Typography
  *
  * Font scale following an 8pt grid.
- * Heading font: DM Serif Display (loaded via expo-google-fonts)
- * Body font: DM Sans (loaded via expo-google-fonts)
+ * Heading font: Playfair Display
+ * Body font: DM Sans
+ * Data readout font: Space Mono
  */
 export const typography = {
   fontFamily: {
-    heading: 'DMSerifDisplay_400Regular',
-    body: 'DMSans_400Regular',
-    bodyMedium: 'DMSans_500Medium',
-    bodyBold: 'DMSans_700Bold',
+    heading:      'PlayfairDisplay_400Regular',
+    headingBold:  'PlayfairDisplay_700Bold',
+    headingBlack: 'PlayfairDisplay_900Black',   // glossy/rare species italic
+    body:         'DMSans_400Regular',
+    bodyMedium:   'DMSans_500Medium',
+    bodyBold:     'DMSans_700Bold',
+    mono:         'SpaceMono_400Regular',
+    monoBold:     'SpaceMono_700Bold',
   },
   fontSize: {
     xs: 11,

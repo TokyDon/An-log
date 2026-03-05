@@ -1,27 +1,35 @@
 /**
  * TabBar
  *
- * Custom tab bar with an elevated, centred camera button.
- * Active tabs use primary green; inactive tabs use secondary grey.
+ * Skeuomorphic device control panel — BioField Scanner MK-II bottom edge.
+ * Dark bezel, brushed-metal top border, LED status dots, raised camera disc.
  */
 
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { colors } from '../../constants/colors';
 import { typography } from '../../constants/typography';
 
 const TAB_CONFIG: Record<string, { icon: string; label: string }> = {
-  index:      { icon: '⊙', label: 'Discover' },
-  anilog:     { icon: '⊛', label: 'Anílog' },
-  milestones: { icon: '◈', label: 'Milestones' },
-  profile:    { icon: '◉', label: 'Profile' },
+  index:      { icon: '⊙', label: 'DISCOVER' },
+  anilog:     { icon: '⊛', label: 'ANÍLOG' },
+  milestones: { icon: '◈', label: 'MILESTONES' },
+  profile:    { icon: '◉', label: 'PROFILE' },
 };
 
 export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+      {/* Rivet detail — top-left */}
+      <View style={styles.rivetLeft} />
+      {/* Rivet detail — top-right */}
+      <View style={styles.rivetRight} />
+
       {/* Left two tabs */}
       {state.routes.slice(0, 2).map((route, index) => (
         <TabItem
@@ -40,7 +48,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
           onPress={() => router.push('/camera')}
           activeOpacity={0.82}
         >
-          <Text style={styles.cameraIcon}>🐾</Text>
+          <Text style={styles.cameraIcon}>📷</Text>
         </TouchableOpacity>
       </View>
 
@@ -70,16 +78,18 @@ function TabItem({
   descriptors: BottomTabBarProps['descriptors'];
 }) {
   const config = TAB_CONFIG[route.name];
-  const label = descriptors[route.key]?.options?.title ?? config?.label ?? route.name;
+  const label = config?.label ?? route.name.toUpperCase();
   const icon = config?.icon ?? '·';
 
   return (
     <TouchableOpacity
-      style={styles.tab}
+      style={[styles.tab, isFocused && styles.tabActive]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={isFocused ? { selected: true } : {}}
     >
+      {/* LED dot */}
+      <View style={[styles.led, isFocused && styles.ledActive]} />
       <Text
         style={[
           styles.tabIcon,
@@ -96,7 +106,6 @@ function TabItem({
       >
         {label}
       </Text>
-      {isFocused && <View style={styles.activeIndicator} />}
     </TouchableOpacity>
   );
 }
@@ -104,64 +113,93 @@ function TabItem({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    paddingBottom: Platform.OS === 'ios' ? 24 : 10,
+    backgroundColor: colors.deviceBezel,
+    borderTopWidth: 2,
+    borderTopColor: colors.metalBrush,
     paddingTop: 10,
-    height: Platform.OS === 'ios' ? 84 : 68,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 12,
+    minHeight: 72,
+    position: 'relative',
   },
+  // Rivet decorations
+  rivetLeft: {
+    position: 'absolute',
+    top: 7,
+    left: 10,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: colors.metalBrushLight,
+  },
+  rivetRight: {
+    position: 'absolute',
+    top: 7,
+    right: 10,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: colors.metalBrushLight,
+  },
+  // Tab items
   tab: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    justifyContent: 'flex-start',
+    paddingTop: 4,
+    gap: 3,
+  },
+  tabActive: {
+    borderTopWidth: 2,
+    borderTopColor: colors.scannerGreenGlow,
+    marginTop: -2,
+  },
+  // LED dot
+  led: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: colors.deviceBody,
+    marginBottom: 2,
+  },
+  ledActive: {
+    backgroundColor: colors.scannerGreenGlow,
+    shadowColor: colors.scannerGreenGlow,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.85,
+    shadowRadius: 6,
   },
   tabIcon: {
     fontSize: 18,
   },
-  tabIconActive: { color: colors.primary },
-  tabIconInactive: { color: colors.text.secondary },
+  tabIconActive: { color: colors.scannerGreenGlow },
+  tabIconInactive: { color: colors.metalBrushLight },
   tabLabel: {
-    fontFamily: typography.fontFamily.bodyMedium,
-    fontSize: typography.fontSize.xs,
-    marginTop: 2,
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: 10,
+    letterSpacing: 0.5,
   },
-  tabLabelActive: { color: colors.primary },
-  tabLabelInactive: { color: colors.text.secondary },
-  activeIndicator: {
-    position: 'absolute',
-    bottom: -2,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.primary,
-  },
+  tabLabelActive: { color: colors.scannerGreenGlow },
+  tabLabelInactive: { color: colors.metalBrushLight },
+  // Camera disc
   cameraGap: {
     width: 72,
     alignItems: 'center',
     justifyContent: 'flex-start',
-    paddingTop: 2,
+    paddingTop: 0,
   },
   cameraButton: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: colors.primary,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.scannerGreen,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -22,
-    borderWidth: 2.5,
-    borderColor: colors.surface,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
+    marginTop: -18,
+    borderWidth: 2,
+    borderColor: colors.scannerGreenGlow,
+    shadowColor: colors.scannerGreenGlow,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.60,
+    shadowRadius: 8,
     elevation: 12,
   },
   cameraIcon: { fontSize: 24 },

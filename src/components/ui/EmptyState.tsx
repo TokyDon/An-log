@@ -49,20 +49,20 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: typography.fontFamily.heading,
     fontSize: typography.fontSize.xl,
-    color: colors.text.primary,
+    color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: 8,
   },
   description: {
     fontFamily: typography.fontFamily.body,
     fontSize: typography.fontSize.base,
-    color: colors.text.secondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
   },
   cta: {
     marginTop: 24,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.scannerGreen,
     borderRadius: 28,
     paddingHorizontal: 28,
     paddingVertical: 14,

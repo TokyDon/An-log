@@ -1,7 +1,7 @@
 /**
  * My Anílog Tab — Collection Grid
  *
- * Full Anímon collection with type filter chips and 2-column card grid.
+ * BioField Scanner MK-II skeuomorphic grid with inset/raised filter chips.
  */
 
 import React, { useState, useMemo } from 'react';
@@ -20,7 +20,7 @@ import { colors } from '../../constants/colors';
 import { typography } from '../../constants/typography';
 import { AnimonCard } from '../../components/ui/AnimonCard';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { MOCK_ANIMONS, MOCK_USER } from '../../data/mockAnimons';
+import { MOCK_ANIMONS } from '../../data/mockAnimons';
 import { ANIMON_TYPES, TYPE_DEFINITIONS } from '../../constants/typeSystem';
 import type { Animon } from '../../types/animon';
 import type { AnimonType } from '../../types/animon';
@@ -61,35 +61,46 @@ export default function AnilogScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.heading}>My Anílog</Text>
-        <Text style={styles.count}>{MOCK_ANIMONS.length} Anímon</Text>
+        <View style={styles.specimenBadge}>
+          <Text style={styles.specimenText}>{MOCK_ANIMONS.length} SPECIMENS LOGGED</Text>
+        </View>
       </View>
 
-      {/* Filter chips */}
+      {/* Filter chips — raised (inactive) / inset (active) */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.filterRow}
         style={styles.filterScroll}
       >
-        {FILTER_OPTIONS.map((opt) => (
-          <TouchableOpacity
-            key={opt.key}
-            style={[
-              styles.filterChip,
-              activeFilter === opt.key && styles.filterChipActive,
-            ]}
-            onPress={() => setActiveFilter(opt.key)}
-          >
-            <Text
+        {FILTER_OPTIONS.map((opt) => {
+          const isActive = activeFilter === opt.key;
+          const typeColor =
+            opt.key !== 'all' ? TYPE_DEFINITIONS[opt.key as AnimonType]?.color : undefined;
+          return (
+            <TouchableOpacity
+              key={opt.key}
               style={[
-                styles.filterChipText,
-                activeFilter === opt.key && styles.filterChipTextActive,
+                styles.filterChip,
+                isActive ? styles.filterChipActive : styles.filterChipInactive,
               ]}
+              onPress={() => setActiveFilter(opt.key)}
             >
-              {opt.emoji} {opt.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              {isActive && opt.key !== 'all' && (
+                <Text style={styles.filterEmoji}>{opt.emoji}</Text>
+              )}
+              <Text
+                style={[
+                  styles.filterChipText,
+                  isActive && { color: typeColor ?? colors.scannerGreenLight },
+                  !isActive && styles.filterChipTextInactive,
+                ]}
+              >
+                {isActive && opt.key === 'all' ? `${opt.emoji} ${opt.label}` : opt.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
 
       {/* Grid */}
@@ -121,28 +132,35 @@ export default function AnilogScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.screenBg,
   },
   header: {
     paddingHorizontal: SIDE_PAD,
-    paddingTop: 12,
-    paddingBottom: 8,
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
+    paddingTop: 20,
+    paddingBottom: 12,
+    backgroundColor: colors.screenBg,
   },
   heading: {
-    fontFamily: typography.fontFamily.heading,
-    fontSize: typography.fontSize['3xl'],
-    color: colors.text.primary,
+    fontFamily: typography.fontFamily.headingBold,
+    fontSize: typography.fontSize['2xl'],
+    color: colors.textPrimary,
   },
-  count: {
-    fontFamily: typography.fontFamily.bodyMedium,
-    fontSize: typography.fontSize.sm,
-    color: colors.text.secondary,
+  specimenBadge: {
+    alignSelf: 'flex-start',
+    marginTop: 6,
+    backgroundColor: colors.deviceBezel,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  specimenText: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: 12,
+    color: colors.amberReadout,
   },
   filterScroll: {
     maxHeight: 52,
+    backgroundColor: colors.screenBg,
   },
   filterRow: {
     paddingHorizontal: SIDE_PAD,
@@ -151,24 +169,44 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   filterChip: {
-    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 8,
     paddingHorizontal: 14,
-    paddingVertical: 7,
-    backgroundColor: colors.surface,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    paddingVertical: 6,
+    gap: 4,
+  },
+  filterChipInactive: {
+    backgroundColor: colors.surfacePanel,
+    borderWidth: 1,
+    borderColor: colors.surfaceBorder,
+    // Raised shadow (inactive)
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
   },
   filterChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    // Inset / pressed-in effect
+    backgroundColor: colors.surfaceInset,
+    borderWidth: 1,
+    borderTopColor: '#B8AD96',
+    borderBottomColor: '#E8E2D0',
+    borderLeftColor: '#B8AD96',
+    borderRightColor: '#E8E2D0',
+    elevation: 0,
   },
   filterChipText: {
-    fontFamily: typography.fontFamily.bodyMedium,
+    fontFamily: typography.fontFamily.bodyBold,
     fontSize: typography.fontSize.sm,
-    color: colors.text.secondary,
   },
-  filterChipTextActive: {
-    color: colors.text.inverse,
+  filterChipTextInactive: {
+    color: colors.textSecondary,
+    fontFamily: typography.fontFamily.bodyMedium,
+  },
+  filterEmoji: {
+    fontSize: 14,
   },
   grid: {
     paddingHorizontal: SIDE_PAD,

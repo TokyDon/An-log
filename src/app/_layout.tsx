@@ -9,13 +9,19 @@ import { Stack } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   useFonts,
-  DMSerifDisplay_400Regular,
-} from '@expo-google-fonts/dm-serif-display';
+  PlayfairDisplay_400Regular,
+  PlayfairDisplay_700Bold,
+  PlayfairDisplay_900Black,
+} from '@expo-google-fonts/playfair-display';
 import {
   DMSans_400Regular,
   DMSans_500Medium,
   DMSans_700Bold,
 } from '@expo-google-fonts/dm-sans';
+import {
+  SpaceMono_400Regular,
+  SpaceMono_700Bold,
+} from '@expo-google-fonts/space-mono';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import '../../global.css';
@@ -33,10 +39,14 @@ const queryClient = new QueryClient({
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    DMSerifDisplay_400Regular,
+    PlayfairDisplay_400Regular,
+    PlayfairDisplay_700Bold,
+    PlayfairDisplay_900Black,
     DMSans_400Regular,
     DMSans_500Medium,
     DMSans_700Bold,
+    SpaceMono_400Regular,
+    SpaceMono_700Bold,
   });
 
   useEffect(() => {

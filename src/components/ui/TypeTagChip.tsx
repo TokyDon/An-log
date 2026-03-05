@@ -1,8 +1,8 @@
 /**
  * TypeTagChip
  *
- * Pill-shaped chip showing an Anímon type (e.g. "Mammal", "Bird").
- * Colours come from the type system constants.
+ * Skeuomorphic raised classification tab — pinned to a specimen board.
+ * Inset top highlight + bottom shadow simulate a physical raised tab.
  */
 
 import React from 'react';
@@ -25,17 +25,20 @@ export function TypeTagChip({ type, size = 'md' }: TypeTagChipProps) {
       style={[
         styles.chip,
         { backgroundColor: def.color },
-        size === 'sm' && styles.chipSm,
+        size === 'sm' ? styles.chipSm : styles.chipMd,
       ]}
     >
+      {/* Inner highlight top edge */}
+      <View style={styles.highlightEdge} />
       <Text
         style={[
           styles.label,
           { color: def.textColor },
-          size === 'sm' && styles.labelSm,
+          size === 'sm' ? styles.labelSm : styles.labelMd,
         ]}
       >
-        {def.emoji} {def.label}
+        <Text style={size === 'sm' ? styles.emojiSm : styles.emojiMd}>{def.emoji}</Text>
+        {'  '}{def.label}
       </Text>
     </View>
   );
@@ -43,19 +46,46 @@ export function TypeTagChip({ type, size = 'md' }: TypeTagChipProps) {
 
 const styles = StyleSheet.create({
   chip: {
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+    // Physical raised shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.20,
+    shadowRadius: 2,
+    elevation: 2,
+    // Bottom shadow edge (shadow base)
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.18)',
   },
   chipSm: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+    height: 20,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+  },
+  chipMd: {
+    height: 24,
+    paddingHorizontal: 10,
+    borderRadius: 7,
+  },
+  // Top highlight stripe overlay
+  highlightEdge: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.28)',
   },
   label: {
-    fontFamily: typography.fontFamily.bodyMedium,
-    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.bodyBold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
-  labelSm: {
-    fontSize: typography.fontSize.xs,
-  },
+  labelSm: { fontSize: 10 },
+  labelMd: { fontSize: 12 },
+  emojiSm: { fontSize: 12 },
+  emojiMd: { fontSize: 14 },
 });
