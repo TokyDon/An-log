@@ -57,6 +57,26 @@ export interface Animon {
   confidenceScore: number;
 }
 
+// ─── Scan Result ─────────────────────────────────────────────────────────────
+
+/**
+ * The result of a completed camera scan, before the user confirms saving.
+ * Combines the captured photo with the AI identification result and derived metadata.
+ * Passed from the camera screen to the save flow.
+ */
+export interface AnimonScanResult {
+  /** Local URI of the captured photo (from expo-camera) */
+  photoUri: string;
+  /** AI identification from Gemini */
+  aiResult: AiIdentificationResult;
+  /** Rarity derived from aiResult */
+  rarity: AnimonRarity;
+  /** ISO 8601 timestamp of the scan */
+  scannedAt: string;
+  /** City/region string from device location (optional — may be unavailable) */
+  region?: string;
+}
+
 // ─── Collection Stats ─────────────────────────────────────────────────────────
 
 export interface CollectionStats {

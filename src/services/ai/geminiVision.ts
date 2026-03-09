@@ -12,13 +12,13 @@
  * API Reference: https://ai.google.dev/api/generate-content
  */
 
-import type { AiIdentificationResult } from './types';
+import type { AiIdentificationResult, AnimonScanResult } from './types';
 import type { AnimonType } from '../../types/animon';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
-const MODEL = 'gemini-pro-vision';
+const MODEL = 'gemini-1.5-flash';
 
 // TODO: Move to environment variable — NEVER commit real API key to git
 const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY ?? '';
@@ -129,4 +129,22 @@ export function deriveRarity(
   if (result.confidenceScore >= 0.95) return 'rare';
   if (result.confidenceScore >= 0.8) return 'uncommon';
   return 'common';
+}
+
+/**
+ * Combine a captured photo URI and AI result into an AnimonScanResult,
+ * ready to present to the user for confirmation before saving.
+ */
+export function buildScanResult(
+  photoUri: string,
+  aiResult: AiIdentificationResult,
+  region?: string,
+): AnimonScanResult {
+  return {
+    photoUri,
+    aiResult,
+    rarity: deriveRarity(aiResult),
+    scannedAt: new Date().toISOString(),
+    region,
+  };
 }

@@ -13,8 +13,10 @@ import {
   TouchableOpacity,
   Dimensions,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import Animated, {
@@ -30,20 +32,22 @@ import { colors } from '../constants/colors';
 import { typography } from '../constants/typography';
 import { RarityBadge } from '../components/ui/RarityBadge';
 import { TypeTagChip } from '../components/ui/TypeTagChip';
-import { MOCK_ANIMONS } from '../data/mockAnimons';
+import { AchievementUnlockToast } from '../components/ui/AchievementUnlockToast';
+import { useCapture } from '../features/capture/useCapture';
 
 const { width: W, height: H } = Dimensions.get('window');
 const RETICLE_SIZE = 240;
 const CORNER = 24;
 const CORNER_T = 3;
 
-const MOCK_RESULT = MOCK_ANIMONS[9]; // Red Fox — rare
-
 type CaptureState = 'idle' | 'scanning' | 'result';
 
 export default function CameraScreen() {
   const [captureState, setCaptureState] = useState<CaptureState>('idle');
   const [flashOn, setFlashOn] = useState(false);
+  const [permission, requestPermission] = useCameraPermissions();
+  const cameraRef = useRef<CameraView>(null);
+  const { captured, isIdentifying, error, needsDisambiguation, pendingAchievement, capture, reset, clearPendingAchievement } = useCapture();
 
   // Scan line Y offset (within reticle)
   const scanY = useSharedValue(0);
@@ -100,22 +104,78 @@ export default function CameraScreen() {
     transform: [{ translateY: resultY.value }],
   }));
 
-  function handleCapture() {
-    if (captureState !== 'idle') return;
-    setCaptureState('scanning');
-    setTimeout(() => {
+  // Transition to result state when capture hook delivers the saved Animon
+  useEffect(() => {
+    if (captured) {
       setCaptureState('result');
       resultY.value = withSpring(0, { damping: 22, stiffness: 100 });
-    }, 1800);
+    }
+  }, [captured]);
+
+  // Surface errors from the capture hook
+  useEffect(() => {
+    if (error) {
+      setCaptureState('idle');
+      Alert.alert('Scan Failed', error);
+    }
+  }, [error]);
+
+  // Low-confidence disambiguation
+  useEffect(() => {
+    if (needsDisambiguation) {
+      setCaptureState('idle');
+      Alert.alert('Multiple Matches', 'Could not determine species with enough confidence. Please try again with a clearer image.');
+      reset();
+    }
+  }, [needsDisambiguation]);
+
+  async function handleCapture() {
+    if (captureState !== 'idle' || !cameraRef.current) return;
+    setCaptureState('scanning');
+    try {
+      const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.8 });
+      if (!photo?.base64) {
+        setCaptureState('idle');
+        Alert.alert('Scan Failed', 'No image data captured.');
+        return;
+      }
+      await capture(photo.base64, photo.uri);
+      // State transition handled by useEffect watching `captured`
+    } catch {
+      setCaptureState('idle');
+      Alert.alert('Scan Failed', 'Could not capture photo. Please try again.');
+    }
   }
 
   function handleRetry() {
     resultY.value = withTiming(H, { duration: 300 });
-    setTimeout(() => setCaptureState('idle'), 320);
+    setTimeout(() => {
+      setCaptureState('idle');
+      reset();
+    }, 320);
   }
 
   function handleAdd() {
     router.back();
+  }
+
+  // Permission not yet determined
+  if (!permission) return <View style={styles.container} />;
+
+  // Permission denied
+  if (!permission.granted) {
+    return (
+      <View style={[styles.container, { alignItems: 'center', justifyContent: 'center', gap: 16 }]}>
+        <Text style={{ color: colors.textInverse, fontFamily: typography.fontFamily.body, fontSize: typography.fontSize.base }}>
+          Camera access is required to scan wildlife.
+        </Text>
+        <TouchableOpacity onPress={requestPermission} style={{ padding: 12 }}>
+          <Text style={{ color: colors.accent, fontFamily: typography.fontFamily.bodyBold, fontSize: typography.fontSize.base }}>
+            Grant Permission
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
 
   return (
@@ -124,12 +184,19 @@ export default function CameraScreen() {
 
       {/* ── Viewfinder ──────────────────────────────────────────── */}
       <View style={styles.viewfinder}>
-        <Image
-          source={{ uri: MOCK_RESULT.photoUrl }}
-          style={StyleSheet.absoluteFill}
-          contentFit="cover"
-          blurRadius={captureState === 'scanning' ? 3 : 0}
-        />
+        {captureState === 'result' && captured ? (
+          <Image
+            source={{ uri: captured.photoUrl }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+          />
+        ) : (
+          <CameraView
+            ref={cameraRef}
+            style={StyleSheet.absoluteFill}
+            flash={flashOn ? 'on' : 'off'}
+          />
+        )}
         <View style={styles.overlay} />
 
         {/* Reticle */}
@@ -210,30 +277,32 @@ export default function CameraScreen() {
 
         <View style={styles.resultImageRow}>
           <Image
-            source={{ uri: MOCK_RESULT.photoUrl }}
+            source={{ uri: captured?.photoUrl }}
             style={styles.resultThumb}
             contentFit="cover"
           />
           <View style={styles.resultInfo}>
-            <Text style={styles.resultSpecies}>{MOCK_RESULT.species}</Text>
-            {MOCK_RESULT.breed && (
-              <Text style={styles.resultBreed}>{MOCK_RESULT.breed}</Text>
+            <Text style={styles.resultSpecies}>{captured?.species ?? '—'}</Text>
+            {captured?.breed && (
+              <Text style={styles.resultBreed}>{captured.breed}</Text>
             )}
             <Text style={styles.resultConfidence}>
-              {Math.round(MOCK_RESULT.confidenceScore * 100)}% MATCH
+              {Math.round((captured?.confidenceScore ?? 0) * 100)}% MATCH
             </Text>
           </View>
         </View>
 
         <View style={styles.resultTags}>
-          {MOCK_RESULT.types.map((t) => (
+          {captured?.types.map((t) => (
             <TypeTagChip key={t} type={t} size="sm" />
           ))}
         </View>
 
         <View style={styles.resultRarity}>
-          <RarityBadge rarity={MOCK_RESULT.rarity} />
-          <Text style={[styles.resultRegion, { color: colors.accentDeep }]}>◉ {MOCK_RESULT.region}</Text>
+          {captured && <RarityBadge rarity={captured.rarity} />}
+          {captured?.region && (
+            <Text style={[styles.resultRegion, { color: colors.accentDeep }]}>◉ {captured.region}</Text>
+          )}
         </View>
 
         <View style={styles.resultActions}>
@@ -245,6 +314,15 @@ export default function CameraScreen() {
           </TouchableOpacity>
         </View>
       </Animated.View>
+
+      {/* ── Achievement Unlock Toast ────────────────────────────── */}
+      {pendingAchievement && (
+        <AchievementUnlockToast
+          achievement={pendingAchievement}
+          visible={pendingAchievement !== null}
+          onHide={clearPendingAchievement}
+        />
+      )}
     </View>
   );
 }

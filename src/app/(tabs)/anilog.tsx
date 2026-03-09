@@ -23,7 +23,7 @@ import { colors } from '../../constants/colors';
 import { typography } from '../../constants/typography';
 import { AnimonCard } from '../../components/ui/AnimonCard';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { MOCK_ANIMONS } from '../../data/mockAnimons';
+import { useCollection } from '../../features/collection/useCollection';
 import { ANIMON_TYPES, TYPE_DEFINITIONS } from '../../constants/typeSystem';
 import type { Animon } from '../../types/animon';
 import type { AnimonType } from '../../types/animon';
@@ -44,12 +44,18 @@ const FILTER_OPTIONS: Array<{ key: FilterOption; label: string }> = [
 ];
 
 export default function AnilogScreen() {
+  const { data: animons = [] } = useCollection();
   const [activeFilter, setActiveFilter] = useState<FilterOption>('all');
 
   const filteredAnimons = useMemo(() => {
-    if (activeFilter === 'all') return MOCK_ANIMONS;
-    return MOCK_ANIMONS.filter((a) => a.types.includes(activeFilter as AnimonType));
-  }, [activeFilter]);
+    const base =
+      activeFilter === 'all'
+        ? animons
+        : animons.filter((a) => a.types.includes(activeFilter as AnimonType));
+    return [...base].sort(
+      (a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime(),
+    );
+  }, [activeFilter, animons]);
 
   function handleCardPress(animon: Animon) {
     router.push(`/animon/${animon.id}`);
@@ -69,7 +75,7 @@ export default function AnilogScreen() {
           <Text style={styles.screenTitle}>My AnÃ­log</Text>
         </View>
         <View style={styles.specimenBadge}>
-          <Text style={styles.specimenBadgeText}>{MOCK_ANIMONS.length} LOGGED</Text>
+          <Text style={styles.specimenBadgeText}>{animons.length} LOGGED</Text>
         </View>
       </View>
 
@@ -113,9 +119,13 @@ export default function AnilogScreen() {
       {/* â”€â”€ Grid â”€â”€ */}
       {filteredAnimons.length === 0 ? (
         <EmptyState
-          title={`No ${activeFilterLabel} specimens`}
-          description="Head outside and scan the next animal you find"
-          ctaLabel="OPEN SCANNER"
+          title={animons.length === 0 ? 'Your collection is empty' : `No ${activeFilterLabel} specimens`}
+          description={
+            animons.length === 0
+              ? 'Start scanning to discover Anímons!'
+              : 'Head outside and scan the next animal you find'
+          }
+          ctaLabel={animons.length === 0 ? 'START SCANNING' : 'OPEN SCANNER'}
           onCta={() => router.push('/camera')}
         />
       ) : (

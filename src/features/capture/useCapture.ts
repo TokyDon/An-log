@@ -18,7 +18,10 @@ import { requestFuzzyLocation, formatRegion } from '../../services/location/fuzz
 import { createAnimon } from '../../services/supabase/animons';
 import { useCollectionStore } from '../../store/collectionStore';
 import { useAuthStore } from '../../store/authStore';
+import { useAchievementStore } from '../../store/achievementStore';
+import { ACHIEVEMENTS } from '../../constants/achievements';
 import type { Animon, AiIdentificationResult } from '../../types/animon';
+import type { Achievement } from '../../constants/achievements';
 
 interface CaptureState {
   isIdentifying: boolean;
@@ -27,6 +30,7 @@ interface CaptureState {
   error: string | null;
   needsDisambiguation: boolean;
   candidates: AiIdentificationResult['alternativeCandidates'];
+  pendingAchievement: Achievement | null;
 }
 
 export function useCapture() {
@@ -40,6 +44,7 @@ export function useCapture() {
     error: null,
     needsDisambiguation: false,
     candidates: undefined,
+    pendingAchievement: null,
   });
 
   const capture = useCallback(
@@ -83,12 +88,41 @@ export function useCapture() {
 
         addAnimon(animon);
 
+        // ── Achievement checks ──────────────────────────────────
+        const allAnimons = useCollectionStore.getState().animons;
+        const total = allAnimons.length;
+        const achieveStore = useAchievementStore.getState();
+        const newlyUnlocked: string[] = [];
+
+        const checks: Array<{ id: string; passes: boolean }> = [
+          { id: 'first_scan',   passes: total === 1 },
+          { id: 'scan_5',       passes: total === 5 },
+          { id: 'scan_10',      passes: total === 10 },
+          { id: 'scan_25',      passes: total === 25 },
+          { id: 'first_rare',   passes: animon.rarity === 'rare' },
+          { id: 'first_glossy', passes: animon.rarity === 'glossy' },
+        ];
+
+        for (const c of checks) {
+          if (c.passes && !achieveStore.isUnlocked(c.id)) {
+            achieveStore.unlockAchievement(c.id);
+            newlyUnlocked.push(c.id);
+          }
+        }
+
+        const firstNewAchievement =
+          newlyUnlocked.length > 0
+            ? (ACHIEVEMENTS.find((a) => a.id === newlyUnlocked[0]) ?? null)
+            : null;
+        // ───────────────────────────────────────────────────────
+
         // Trigger 900ms reveal animation window
         setState((s) => ({
           ...s,
           isIdentifying: false,
           isRevealing: true,
           captured: animon,
+          pendingAchievement: firstNewAchievement,
         }));
 
         setTimeout(() => {
@@ -113,8 +147,13 @@ export function useCapture() {
       error: null,
       needsDisambiguation: false,
       candidates: undefined,
+      pendingAchievement: null,
     });
   }, []);
 
-  return { ...state, capture, reset };
+  const clearPendingAchievement = useCallback(() => {
+    setState((s) => ({ ...s, pendingAchievement: null }));
+  }, []);
+
+  return { ...state, capture, reset, clearPendingAchievement };
 }

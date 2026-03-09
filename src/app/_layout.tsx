@@ -6,7 +6,8 @@
  */
 
 import { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
@@ -50,6 +51,9 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded) {
       SplashScreen.hideAsync();
+      AsyncStorage.getItem('onboarding_complete').then((val) => {
+        if (!val) router.replace('/onboarding');
+      });
     }
   }, [fontsLoaded]);
 
@@ -63,6 +67,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="camera" options={{ presentation: 'fullScreenModal' }} />
           <Stack.Screen name="animon/[id]" options={{ presentation: 'card' }} />
+          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         </Stack>
       </QueryClientProvider>
     </GestureHandlerRootView>

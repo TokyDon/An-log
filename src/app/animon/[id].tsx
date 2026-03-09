@@ -23,7 +23,7 @@ import { colors } from '../../constants/colors';
 import { typography } from '../../constants/typography';
 import { RarityBadge } from '../../components/ui/RarityBadge';
 import { TypeTagChip } from '../../components/ui/TypeTagChip';
-import { MOCK_ANIMONS } from '../../data/mockAnimons';
+import { useCollectionStore } from '../../store/collectionStore';
 
 const { height: H } = Dimensions.get('window');
 const HERO_HEIGHT = 280;
@@ -42,7 +42,8 @@ function genderLabel(g: string): string {
 
 export default function AnimonDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const animon = MOCK_ANIMONS.find((a) => a.id === id);
+  const animons = useCollectionStore((s) => s.animons);
+  const animon = animons.find((a) => a.id === id);
 
   if (!animon) {
     return (

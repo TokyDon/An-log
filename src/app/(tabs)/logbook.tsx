@@ -11,29 +11,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../constants/colors';
 import { typography } from '../../constants/typography';
 import { RarityBadge } from '../../components/ui/RarityBadge';
-import { MOCK_ANIMONS } from '../../data/mockAnimons';
+import { useCollection } from '../../features/collection/useCollection';
+import { useAchievementStore } from '../../store/achievementStore';
+import { ACHIEVEMENTS } from '../../constants/achievements';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const TOTAL_SPECIES_TARGET = 100;
-const UNIQUE_SPECIES = new Set(MOCK_ANIMONS.map((a) => a.species)).size;
 
-const RARITY_DATA = [
-  { rarity: 'common'   as const, label: 'Common',   count: 6,  target: 20 },
-  { rarity: 'uncommon' as const, label: 'Uncommon', count: 3,  target: 10 },
-  { rarity: 'rare'     as const, label: 'Rare',     count: 2,  target: 5  },
-  { rarity: 'glossy'   as const, label: 'Glossy',   count: 1,  target: 1  },
-];
-
-const ACHIEVEMENTS = [
-  { id: 'first_catch',    title: 'First Catch',      description: 'Caught your first Anímon',              emoji: '🎯', tier: 'Bronze' as const, unlocked: true  },
-  { id: 'explorer',       title: 'Explorer',         description: 'Caught Anímon in 3 different regions',  emoji: '🗺️', tier: 'Silver' as const, unlocked: true  },
-  { id: 'rare_finder',    title: 'Rare Finder',      description: 'Caught a rare Anímon',                  emoji: '🔮', tier: 'Gold'   as const, unlocked: true  },
-  { id: 'glossy_hunter',  title: 'Glossy Hunter',    description: 'Catch a glossy Anímon',                 emoji: '✨', tier: 'Gold'   as const, unlocked: false },
-  { id: 'century_club',   title: 'Century Club',     description: 'Catch 100 unique species',              emoji: '💯', tier: 'Gold'   as const, unlocked: false },
-  { id: 'global_trainer', title: 'Global Trainer',   description: 'Catch Anímon on 5 continents',          emoji: '🌎', tier: 'Gold'   as const, unlocked: false },
-];
-
-const TIER_COLORS = { Bronze: colors.text3, Silver: colors.text2, Gold: colors.rarity.uncommon };
+const TIER_COLORS: Record<string, string> = {
+  Bronze:   colors.text3,
+  Silver:   colors.text2,
+  Gold:     colors.rarity.uncommon,
+  Platinum: '#E5E4E2',
+  Diamond:  colors.rarity.rare,
+};
 
 function SectionRule({ label }: { label: string }) {
   return (
@@ -64,7 +55,26 @@ const sectionRuleStyles = StyleSheet.create({
 });
 
 export default function MilestonesScreen() {
-  const progressPct = Math.min(UNIQUE_SPECIES / TOTAL_SPECIES_TARGET, 1);
+  const { data: animons = [] } = useCollection();
+  const isUnlocked = useAchievementStore((s) => s.isUnlocked);
+
+  const uniqueSpecies = new Set(animons.map((a) => a.species)).size;
+  const progressPct = Math.min(uniqueSpecies / TOTAL_SPECIES_TARGET, 1);
+
+  const rarityData = [
+    { rarity: 'common'   as const, label: 'Common',   count: animons.filter((a) => a.rarity === 'common').length,   target: 20 },
+    { rarity: 'uncommon' as const, label: 'Uncommon', count: animons.filter((a) => a.rarity === 'uncommon').length, target: 10 },
+    { rarity: 'rare'     as const, label: 'Rare',     count: animons.filter((a) => a.rarity === 'rare').length,     target: 5  },
+    { rarity: 'glossy'   as const, label: 'Glossy',   count: animons.filter((a) => a.rarity === 'glossy').length,   target: 1  },
+  ];
+
+  const uniqueRegions = new Set(animons.map((a) => a.region).filter(Boolean)).size;
+
+  // Map ACHIEVEMENTS constant to display objects with live unlocked state
+  const achievements = ACHIEVEMENTS.map((a) => ({
+    ...a,
+    unlocked: isUnlocked(a.id),
+  }));
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -80,7 +90,7 @@ export default function MilestonesScreen() {
           </View>
           <View style={styles.specimenBadge}>
             <Text style={styles.specimenBadgeText}>
-              {UNIQUE_SPECIES}/{TOTAL_SPECIES_TARGET} SPECIES
+              {uniqueSpecies}/{TOTAL_SPECIES_TARGET} SPECIES
             </Text>
           </View>
         </View>
@@ -89,7 +99,7 @@ export default function MilestonesScreen() {
         <View style={styles.gaugePanel}>
           <View style={styles.gaugeLabelRow}>
             <Text style={styles.gaugeLabel}>ANÍMON COLLECTOR</Text>
-            <Text style={styles.gaugeFraction}>{UNIQUE_SPECIES} / {TOTAL_SPECIES_TARGET}</Text>
+            <Text style={styles.gaugeFraction}>{uniqueSpecies} / {TOTAL_SPECIES_TARGET}</Text>
           </View>
           <View style={styles.gaugeTrack}>
             <View style={[styles.gaugeFill, { width: `${progressPct * 100}%` as any }]} />
@@ -100,7 +110,7 @@ export default function MilestonesScreen() {
         {/* ── Rarity breakdown grid ── */}
         <SectionRule label="RARITY COLLECTION" />
         <View style={styles.rarityGrid}>
-          {RARITY_DATA.map((r) => (
+          {rarityData.map((r) => (
             <View key={r.rarity} style={styles.rarityCell}>
               <RarityBadge rarity={r.rarity} />
               <Text style={[styles.rarityCount, { color: colors.rarity[r.rarity] }]}>
@@ -116,7 +126,7 @@ export default function MilestonesScreen() {
           <SectionRule label="ACHIEVEMENTS" />
         </View>
         <View style={styles.achievementList}>
-          {ACHIEVEMENTS.map((a) => {
+          {achievements.map((a) => {
             const accentColor = TIER_COLORS[a.tier];
             return (
               <View

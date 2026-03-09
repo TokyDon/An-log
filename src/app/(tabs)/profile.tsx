@@ -1,11 +1,10 @@
 /**
- * Profile Tab — Naturalist Field Journal v2
+ * Profile Tab — Naturalist Field Journal v3
  *
- * forestFloor hero zone, specimenCream scroll, cardStock stat strip,
- * inkRule borders, amberGlow upgrade banner.
+ * Real data: useCollection() for animon stats, authStore + AsyncStorage for user.
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -13,34 +12,70 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../../constants/colors';
 import { typography } from '../../constants/typography';
 import { AnimonCard } from '../../components/ui/AnimonCard';
-import { MOCK_ANIMONS, MOCK_USER } from '../../data/mockAnimons';
-import type { Animon } from '../../types/animon';
+import { useCollection } from '../../features/collection/useCollection';
+import { useAuthStore } from '../../store/authStore';
+import type { Animon, AnimonRarity } from '../../types/animon';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const RARITY_SEGMENTS = [
-  { rarity: 'common'   as const, count: 6  },
-  { rarity: 'uncommon' as const, count: 3  },
-  { rarity: 'rare'     as const, count: 2  },
-  { rarity: 'glossy'   as const, count: 1  },
-];
-const TOTAL_CAUGHT = RARITY_SEGMENTS.reduce((sum, s) => sum + s.count, 0);
+const ALL_RARITIES: AnimonRarity[] = ['common', 'uncommon', 'rare', 'glossy'];
 
-const STAT_PANELS = [
-  { label: 'CAUGHT',    value: String(MOCK_USER.totalCaught) },
-  { label: 'SPECIES',   value: String(MOCK_USER.uniqueSpecies) },
-  { label: 'REGIONS',   value: String(MOCK_USER.regionsExplored) },
-];
+function formatMemberSince(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-GB', {
+    month: 'long',
+    year: 'numeric',
+  });
+}
 
 export default function ProfileScreen() {
-  const recentThree = MOCK_ANIMONS.slice(0, 3);
+  const { data: animons = [], isLoading } = useCollection();
+  const user = useAuthStore((s) => s.user);
+  const [storedUsername, setStoredUsername] = useState<string | null>(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem('username').then(setStoredUsername);
+  }, []);
+
+  const username =
+    storedUsername ??
+    user?.username ??
+    user?.displayName ??
+    'Trainer';
+  const initials = username.slice(0, 2).toUpperCase();
+  const memberSince = user?.createdAt ? formatMemberSince(user.createdAt) : null;
+
+  // Derived stats
+  const totalCaught = animons.length;
+  const uniqueSpecies = new Set(animons.map((a) => a.species)).size;
+  const uniqueRegions = new Set(animons.map((a) => a.region).filter(Boolean)).size;
+
+  const STAT_PANELS = [
+    { label: 'CAUGHT',  value: String(totalCaught)   },
+    { label: 'SPECIES', value: String(uniqueSpecies)  },
+    { label: 'REGIONS', value: String(uniqueRegions)  },
+  ];
+
+  // Sort by capturedAt desc, take 3
+  const recentThree: Animon[] = [...animons]
+    .sort((a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime())
+    .slice(0, 3);
+
+  // Rarity bar — all rarities shown in legend, only non-zero in bar
+  const allRaritySegments = ALL_RARITIES.map((r) => ({
+    rarity: r,
+    count: animons.filter((a) => a.rarity === r).length,
+  }));
+  const rarityBarSegments = allRaritySegments.filter((s) => s.count > 0);
+  const totalForBar = rarityBarSegments.reduce((sum, s) => sum + s.count, 0);
 
   function handleCardPress(animon: Animon) {
     router.push(`/animon/${animon.id}`);
@@ -63,49 +98,61 @@ export default function ProfileScreen() {
           {/* Avatar */}
           <View style={styles.avatarRing}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarInitials}>{MOCK_USER.initials}</Text>
+              <Text style={styles.avatarInitials}>{initials}</Text>
             </View>
           </View>
-          <Text style={styles.username}>{MOCK_USER.username}</Text>
-          <Text style={styles.memberSince}>
-            TRAINER SINCE {MOCK_USER.memberSince.toUpperCase()}
-          </Text>
+          <Text style={styles.username}>{username}</Text>
+          {memberSince && (
+            <Text style={styles.memberSince}>
+              TRAINER SINCE {memberSince.toUpperCase()}
+            </Text>
+          )}
         </View>
 
         {/* ── Stat strip ─────────────────────────────────────────── */}
-        <View style={styles.statStrip}>
-          {STAT_PANELS.map((s, i) => (
-            <React.Fragment key={s.label}>
-              {i > 0 && <View style={styles.statDivider} />}
-              <View style={styles.statPanel}>
-                <Text style={styles.statValue}>{s.value}</Text>
-                <Text style={styles.statLabel}>{s.label}</Text>
-              </View>
-            </React.Fragment>
-          ))}
-        </View>
+        {isLoading ? (
+          <View style={styles.loadingStrip}>
+            <ActivityIndicator color={colors.accent} />
+          </View>
+        ) : (
+          <View style={styles.statStrip}>
+            {STAT_PANELS.map((s, i) => (
+              <React.Fragment key={s.label}>
+                {i > 0 && <View style={styles.statDivider} />}
+                <View style={styles.statPanel}>
+                  <Text style={styles.statValue}>{s.value}</Text>
+                  <Text style={styles.statLabel}>{s.label}</Text>
+                </View>
+              </React.Fragment>
+            ))}
+          </View>
+        )}
 
         {/* ── Rarity breakdown bar ───────────────────────────────── */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>RARITY BREAKDOWN</Text>
         </View>
         <View style={styles.rarityBarWrap}>
-          <View style={styles.rarityBar}>
-            {RARITY_SEGMENTS.map((seg) => (
-              <View
-                key={seg.rarity}
-                style={[
-                  styles.raritySegment,
-                  {
-                    flex: seg.count / TOTAL_CAUGHT,
-                    backgroundColor: colors.rarity[seg.rarity],
-                  },
-                ]}
-              />
-            ))}
-          </View>
+          {totalForBar > 0 ? (
+            <View style={styles.rarityBar}>
+              {rarityBarSegments.map((seg) => (
+                <View
+                  key={seg.rarity}
+                  style={[
+                    styles.raritySegment,
+                    {
+                      flex: seg.count / totalForBar,
+                      backgroundColor: colors.rarity[seg.rarity],
+                    },
+                  ]}
+                />
+              ))}
+            </View>
+          ) : (
+            <View style={[styles.rarityBar, { backgroundColor: colors.border }]} />
+          )}
           <View style={styles.rarityLegend}>
-            {RARITY_SEGMENTS.map((seg) => (
+            {allRaritySegments.map((seg) => (
               <View key={seg.rarity} style={styles.rarityLegendItem}>
                 <View
                   style={[
@@ -125,16 +172,34 @@ export default function ProfileScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>RECENT CATCHES</Text>
         </View>
-        <View style={styles.recentList}>
-          {recentThree.map((animon) => (
-            <AnimonCard
-              key={animon.id}
-              animon={animon}
-              compact
-              onPress={handleCardPress}
-            />
-          ))}
-        </View>
+        {isLoading ? (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator color={colors.accent} />
+          </View>
+        ) : recentThree.length === 0 ? (
+          <View style={styles.emptyRecent}>
+            <Text style={styles.emptyRecentText}>
+              No Anímons yet — start scanning!
+            </Text>
+            <TouchableOpacity
+              style={styles.emptyRecentBtn}
+              onPress={() => router.push('/camera')}
+            >
+              <Text style={styles.emptyRecentBtnText}>START SCANNING</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.recentList}>
+            {recentThree.map((animon) => (
+              <AnimonCard
+                key={animon.id}
+                animon={animon}
+                compact
+                onPress={handleCardPress}
+              />
+            ))}
+          </View>
+        )}
 
         {/* ── Anílog+ banner ─────────────────────────────────────── */}
         <View style={styles.bannerWrap}>
@@ -221,6 +286,20 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.55)',
     marginTop: 4,
     letterSpacing: 1,
+  },
+
+  // Loading placeholder for stat strip
+  loadingStrip: {
+    height: 72,
+    marginHorizontal: 20,
+    marginTop: -1,
+    marginBottom: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface2,
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
 
   // Stat strip
@@ -310,6 +389,41 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.text2,
     letterSpacing: 0.8,
+  },
+
+  // Loading / empty for recent
+  loadingRow: {
+    paddingVertical: 24,
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  emptyRecent: {
+    marginHorizontal: 20,
+    marginBottom: 24,
+    alignItems: 'center',
+    paddingVertical: 24,
+    backgroundColor: colors.surface,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 12,
+  },
+  emptyRecentText: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.fontSize.base,
+    color: colors.text2,
+  },
+  emptyRecentBtn: {
+    backgroundColor: colors.navDark,
+    borderRadius: 3,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  emptyRecentBtnText: {
+    fontFamily: typography.fontFamily.monoBold,
+    fontSize: typography.fontSize.sm,
+    color: colors.textInverse,
+    letterSpacing: 1.2,
   },
 
   // Recent catches
