@@ -1,16 +1,17 @@
-/**
- * Onboarding Screen — First-Launch Flow
+﻿/**
+ * Onboarding Screen — 6-step flow
  *
- * 5-step sequence: Welcome → Username → Camera Permission →
- * Notification Permission → Finish
- * Persists completion flag via AsyncStorage.
+ * Step 1: What's an Animon? (educational, skip to step 3)
+ * Step 2: How to catch one (educational, skip to step 3)
+ * Step 3: Choose your first Animon (MANDATORY — single select)
+ * Step 4: Meet your Animon (rename + addToParty)
+ * Step 5: Camera permission (skippable)
+ * Step 6: Notification permission (skippable — all paths set onboarding flag)
  */
-
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   TouchableOpacity,
   TextInput,
@@ -18,6 +19,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Animated,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -28,271 +31,294 @@ import { colors } from '../constants/colors';
 import { typography } from '../constants/typography';
 import { STARTER_ANIMONS } from '../data/starters';
 import { usePartyStore } from '../store/partyStore';
+import { TypeTagChip } from '../components/ui/TypeTagChip';
+import { RarityBadge } from '../components/ui/RarityBadge';
+import type { Animon } from '../types/animon';
 
 const { width: W } = Dimensions.get('window');
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 6;
 
-type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+// ── Progress Dots ─────────────────────────────────────────────────────────────
+function ProgressDots({ current, total }: { current: number; total: number }) {
+  return (
+    <View style={styles.dotsRow}>
+      {Array.from({ length: total }, (_, i) => {
+        const stepNum = i + 1;
+        const isDone = stepNum < current;
+        const isActive = stepNum === current;
+        return (
+          <View
+            key={i}
+            style={[
+              styles.dot,
+              isDone && styles.dotDone,
+              isActive && styles.dotActive,
+              !isDone && !isActive && styles.dotInactive,
+            ]}
+          />
+        );
+      })}
+    </View>
+  );
+}
 
-export default function OnboardingScreen() {
-  const [step, setStep] = useState<Step>(1);
-  const [username, setUsername] = useState('');
-  const [usernameError, setUsernameError] = useState('');
-
-  // Step 3 — starter selection
-  const [selectedStarters, setSelectedStarters] = useState<string[]>([]);
-
-  // Step 4 — starter naming: id → nickname
-  const [starterNames, setStarterNames] = useState<Record<string, string>>({});
-
-  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
-  const [cameraRequested, setCameraRequested] = useState(false);
-  const [notifRequested, setNotifRequested] = useState(false);
-
-  function advance() {
-    setStep((s) => Math.min(s + 1, TOTAL_STEPS) as Step);
-  }
-
-  // Step 2 — validate and save username
-  async function handleUsernameNext() {
-    const trimmed = username.trim();
-    if (!trimmed) {
-      setUsernameError('Please enter a name to continue.');
-      return;
-    }
-    setUsernameError('');
-    await AsyncStorage.setItem('username', trimmed);
-    advance();
-  }
-
-  // Step 3 — toggle a starter selection
-  function toggleStarter(id: string) {
-    setSelectedStarters((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
-  }
-
-  // Step 3 → 4: seed names from species, then advance
-  function handleStartersNext() {
-    const names: Record<string, string> = {};
-    for (const id of selectedStarters) {
-      const s = STARTER_ANIMONS.find((a) => a.id === id);
-      names[id] = s?.species ?? id;
-    }
-    setStarterNames(names);
-    advance();
-  }
-
-  // Step 5 — request camera
-  async function handleRequestCamera() {
-    await requestCameraPermission();
-    setCameraRequested(true);
-  }
-
-  // Step 6 — request notifications
-  async function handleRequestNotifications() {
-    await Notifications.requestPermissionsAsync();
-    setNotifRequested(true);
-  }
-
-  // Step 7 — finish: save starters to party, then navigate
-  async function handleFinish() {
-    const { addToParty } = usePartyStore.getState();
-    for (const id of selectedStarters) {
-      const starter = STARTER_ANIMONS.find((a) => a.id === id);
-      if (starter) {
-        addToParty(starter, starterNames[id] || starter.species);
-      }
-    }
-    await AsyncStorage.setItem('onboarding_complete', 'true');
-    router.replace('/');
-  }
+// ── Starter Card ──────────────────────────────────────────────────────────────
+function StarterCard({
+  animon,
+  selected,
+  onPress,
+}: {
+  animon: Animon;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    Animated.spring(scale, {
+      toValue: selected ? 1.03 : 1,
+      useNativeDriver: true,
+      tension: 180,
+      friction: 12,
+    }).start();
+  }, [selected]);
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
+      <Animated.View
+        style={[
+          styles.starterCard,
+          selected && styles.starterCardSelected,
+          { transform: [{ scale }] },
+        ]}
+      >
+        <Image
+          source={{ uri: animon.photoUrl }}
+          style={styles.starterPhoto}
+          resizeMode="cover"
+        />
+        <View style={styles.starterInfo}>
+          <Text style={styles.starterSpecies}>{animon.species}</Text>
+          <View style={styles.starterTypeRow}>
+            {animon.types.map((t) => (
+              <TypeTagChip key={t} type={t} size="sm" />
+            ))}
+          </View>
+        </View>
+        {selected && (
+          <View style={styles.starterCheckmark}>
+            <Text style={styles.starterCheckmarkText}>✓</Text>
+          </View>
+        )}
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
+export default function OnboardingScreen() {
+  const [step, setStep] = useState(1);
+  const [selectedStarter, setSelectedStarter] = useState<Animon | null>(null);
+  const [nickname, setNickname] = useState('');
+  const [cameraRequested, setCameraRequested] = useState(false);
+  const [notifRequested, setNotifRequested] = useState(false);
+  const addToParty = usePartyStore((s) => s.addToParty);
+  const [, requestCameraPermission] = useCameraPermissions();
+
+  // Entrance animation for catch card (step 4)
+  const cardOpacity = useRef(new Animated.Value(0)).current;
+  const cardTranslateY = useRef(new Animated.Value(30)).current;
+  useEffect(() => {
+    if (step === 4) {
+      cardOpacity.setValue(0);
+      cardTranslateY.setValue(30);
+      Animated.parallel([
+        Animated.timing(cardOpacity, {
+          toValue: 1,
+          duration: 320,
+          useNativeDriver: true,
+        }),
+        Animated.timing(cardTranslateY, {
+          toValue: 0,
+          duration: 320,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [step]);
+
+  const advance = () => setStep((s) => Math.min(s + 1, TOTAL_STEPS));
+  const goToStep = (n: number) => setStep(n);
+
+  const handleConfirmStarter = () => {
+    if (!selectedStarter) return;
+    setNickname(selectedStarter.species);
+    advance();
+  };
+
+  const handleAddToParty = () => {
+    if (!selectedStarter) return;
+    addToParty(selectedStarter, nickname.trim() || selectedStarter.species);
+    advance();
+  };
+
+  const handleRequestCamera = async () => {
+    await requestCameraPermission();
+    setCameraRequested(true);
+  };
+
+  const handleRequestNotifications = async () => {
+    await Notifications.requestPermissionsAsync();
+    setNotifRequested(true);
+  };
+
+  const handleFinish = async () => {
+    await AsyncStorage.setItem('onboarding_complete', 'true');
+    router.replace('/');
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {/* ── Progress dots ─────────────────────────────────────── */}
-        <View style={styles.dotsRow}>
-          {Array.from({ length: TOTAL_STEPS }, (_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.dot,
-                i + 1 === step ? styles.dotActive : i + 1 < step ? styles.dotDone : styles.dotInactive,
-              ]}
-            />
-          ))}
-        </View>
-
+        <ProgressDots current={step} total={TOTAL_STEPS} />
         <ScrollView
-          style={styles.flex}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ── Step 1 — Welcome ──────────────────────────────── */}
+          {/* ── Step 1 — What's an Animon? ── */}
           {step === 1 && (
             <View style={styles.stepContainer}>
               <View style={styles.logoMark}>
-                <Text style={styles.logoGlyph}>A</Text>
+                <Text style={styles.logoGlyph}>Ā</Text>
               </View>
-              <Text style={styles.headline}>Welcome to Anílog</Text>
-              <Text style={styles.tagline}>
-                Discover, scan and collect the wild world around you.
-                Every walk is a new adventure.
+              <Text style={styles.stepLabel}>STEP 1 OF {TOTAL_STEPS}</Text>
+              <Text style={styles.headline}>What's an Animon?</Text>
+              <Text style={styles.bodyText}>
+                {`An Animon is any real animal you've encountered in the wild — a fox crossing the road, a heron on the riverbank, the beetle under a log. You spot it. You log it. It's yours.\n\nEvery sighting becomes part of your permanent field record.`}
               </Text>
-              <TouchableOpacity style={styles.primaryBtn} onPress={advance}>
-                <Text style={styles.primaryBtnText}>GET STARTED</Text>
-              </TouchableOpacity>
+              <View style={styles.btnStack}>
+                <TouchableOpacity style={styles.primaryBtn} onPress={advance}>
+                  <Text style={styles.primaryBtnText}>GOT IT</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.ghostBtn} onPress={() => goToStep(3)}>
+                  <Text style={styles.ghostBtnText}>SKIP TO STARTER</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
 
-          {/* ── Step 2 — Username ─────────────────────────────── */}
+          {/* ── Step 2 — How to catch one ── */}
           {step === 2 && (
             <View style={styles.stepContainer}>
-              <Text style={styles.stepNumber}>STEP 2 OF {TOTAL_STEPS}</Text>
-              <Text style={styles.headline}>What should we{'\n'}call you?</Text>
-              <Text style={styles.tagline}>
-                Your trainer name is shown on your profile and logbook.
+              <Text style={styles.permissionEmoji}>📷</Text>
+              <Text style={styles.stepLabel}>STEP 2 OF {TOTAL_STEPS}</Text>
+              <Text style={styles.headline}>How to catch one</Text>
+              <Text style={styles.bodyText}>
+                {`Open the camera, point it at the animal — or a photo of one — and Anílog identifies the species. First sighting of a species? It joins your collection as a new Animon.\n\nSeen it before? Your encounter count goes up.`}
               </Text>
-              <TextInput
-                style={[styles.input, usernameError ? styles.inputError : null]}
-                value={username}
-                onChangeText={(t) => {
-                  setUsername(t);
-                  if (usernameError) setUsernameError('');
-                }}
-                placeholder="Trainer name…"
-                placeholderTextColor={colors.text3}
-                autoCapitalize="words"
-                autoCorrect={false}
-                returnKeyType="done"
-                onSubmitEditing={handleUsernameNext}
-                maxLength={32}
-              />
-              {usernameError ? (
-                <Text style={styles.errorText}>{usernameError}</Text>
-              ) : null}
-              <TouchableOpacity style={styles.primaryBtn} onPress={handleUsernameNext}>
-                <Text style={styles.primaryBtnText}>CONTINUE</Text>
-              </TouchableOpacity>
+              <View style={styles.btnStack}>
+                <TouchableOpacity style={styles.primaryBtn} onPress={advance}>
+                  <Text style={styles.primaryBtnText}>MAKES SENSE</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.ghostBtn} onPress={() => goToStep(3)}>
+                  <Text style={styles.ghostBtnText}>SKIP TO STARTER</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
 
-          {/* ── Step 3 — Choose Starters ─────────────────────── */}
+          {/* ── Step 3 — Choose starter ── */}
           {step === 3 && (
             <View style={styles.stepContainer}>
-              <Text style={styles.stepNumber}>STEP 3 OF {TOTAL_STEPS}</Text>
-              <Text style={styles.headline}>Choose your{'\n'}starters</Text>
-              <Text style={styles.tagline}>
-                Every great trainer starts somewhere. Pick the Anímons you want in your party.
+              <Text style={styles.stepLabel}>STEP 3 OF {TOTAL_STEPS}</Text>
+              <Text style={styles.headline}>Choose your first Animon</Text>
+              <Text style={styles.bodyText}>
+                {`Every naturalist starts somewhere. Pick the animal that feels like yours — you'll catch plenty more out in the field.`}
               </Text>
-
-              {STARTER_ANIMONS.map((starter) => {
-                const selected = selectedStarters.includes(starter.id);
-                return (
-                  <TouchableOpacity
-                    key={starter.id}
-                    style={[styles.starterCard, selected && styles.starterCardSelected]}
-                    onPress={() => toggleStarter(starter.id)}
-                    activeOpacity={0.8}
-                  >
-                    <Image
-                      source={{ uri: starter.photoUrl }}
-                      style={styles.starterPhoto}
-                      resizeMode="cover"
-                    />
-                    <View style={styles.starterInfo}>
-                      <Text style={styles.starterSpecies}>{starter.species}</Text>
-                      <View style={styles.starterTypeRow}>
-                        {starter.types.map((t) => (
-                          <View key={t} style={styles.starterTypeChip}>
-                            <Text style={styles.starterTypeText}>{t.toUpperCase()}</Text>
-                          </View>
-                        ))}
-                      </View>
-                    </View>
-                    {selected && (
-                      <View style={styles.starterCheckmark}>
-                        <Text style={styles.starterCheckmarkText}>✓</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-
+              <View style={styles.starterList}>
+                {STARTER_ANIMONS.map((a) => (
+                  <StarterCard
+                    key={a.id}
+                    animon={a}
+                    selected={selectedStarter?.id === a.id}
+                    onPress={() => setSelectedStarter(a)}
+                  />
+                ))}
+              </View>
               <TouchableOpacity
-                style={[styles.primaryBtn, selectedStarters.length === 0 && styles.btnDisabled]}
-                onPress={handleStartersNext}
-                disabled={selectedStarters.length === 0}
+                style={[styles.primaryBtn, !selectedStarter && styles.btnDisabled]}
+                onPress={handleConfirmStarter}
+                disabled={!selectedStarter}
               >
-                <Text style={styles.primaryBtnText}>
-                  {selectedStarters.length === 0 ? 'SELECT AT LEAST ONE' : 'CONTINUE'}
-                </Text>
+                <Text style={styles.primaryBtnText}>CHOOSE THIS ONE</Text>
               </TouchableOpacity>
             </View>
           )}
 
-          {/* ── Step 4 — Name Your Anímons ────────────────────── */}
-          {step === 4 && (
+          {/* ── Step 4 — Meet your Animon ── */}
+          {step === 4 && selectedStarter && (
             <View style={styles.stepContainer}>
-              <Text style={styles.stepNumber}>STEP 4 OF {TOTAL_STEPS}</Text>
-              <Text style={styles.headline}>Name your{'\n'}Anímons</Text>
-              <Text style={styles.tagline}>
-                Give your starters a name. You can always change it later.
-              </Text>
-
-              {selectedStarters.map((id) => {
-                const starter = STARTER_ANIMONS.find((a) => a.id === id);
-                if (!starter) return null;
-                return (
-                  <View key={id} style={styles.namingRow}>
-                    <Image
-                      source={{ uri: starter.photoUrl }}
-                      style={styles.namingPhoto}
-                      resizeMode="cover"
-                    />
-                    <TextInput
-                      style={styles.namingInput}
-                      value={starterNames[id] ?? starter.species}
-                      onChangeText={(text) =>
-                        setStarterNames((prev) => ({ ...prev, [id]: text }))
-                      }
-                      placeholder={starter.species}
-                      placeholderTextColor={colors.text3}
-                      autoCapitalize="words"
-                      autoCorrect={false}
-                      maxLength={24}
-                    />
+              <Text style={styles.stepLabel}>STEP 4 OF {TOTAL_STEPS}</Text>
+              <Text style={styles.headline}>Meet your Animon</Text>
+              <Animated.View
+                style={[
+                  styles.catchCard,
+                  {
+                    opacity: cardOpacity,
+                    transform: [{ translateY: cardTranslateY }],
+                  },
+                ]}
+              >
+                <Image
+                  source={{ uri: selectedStarter.photoUrl }}
+                  style={styles.catchCardPhoto}
+                  resizeMode="cover"
+                />
+                <View style={styles.catchCardBody}>
+                  <View style={styles.catchCardHeader}>
+                    <Text style={styles.catchCardSpecies}>{selectedStarter.species}</Text>
+                    <RarityBadge rarity={selectedStarter.rarity} />
                   </View>
-                );
-              })}
-
-              <TouchableOpacity style={styles.primaryBtn} onPress={advance}>
-                <Text style={styles.primaryBtnText}>CONTINUE</Text>
+                  <View style={styles.catchCardTypes}>
+                    {selectedStarter.types.map((t) => (
+                      <TypeTagChip key={t} type={t} size="sm" />
+                    ))}
+                  </View>
+                </View>
+              </Animated.View>
+              <Text style={styles.fieldLabel}>Give it a name</Text>
+              <TextInput
+                style={styles.input}
+                value={nickname}
+                onChangeText={setNickname}
+                placeholder={selectedStarter.species}
+                placeholderTextColor={colors.text3}
+                autoCapitalize="words"
+                returnKeyType="done"
+              />
+              <TouchableOpacity style={[styles.primaryBtn, styles.mtSm]} onPress={handleAddToParty}>
+                <Text style={styles.primaryBtnText}>ADD TO PARTY</Text>
               </TouchableOpacity>
             </View>
           )}
 
-          {/* ── Step 5 — Camera Permission ────────────────────── */}
+          {/* ── Step 5 — Camera permission ── */}
           {step === 5 && (
             <View style={styles.stepContainer}>
-              <Text style={styles.stepNumber}>STEP 5 OF {TOTAL_STEPS}</Text>
               <Text style={styles.permissionEmoji}>📷</Text>
-              <Text style={styles.headline}>Camera Access</Text>
-              <Text style={styles.tagline}>
-                Anílog uses your camera to scan and identify wildlife around you.
+              <Text style={styles.stepLabel}>STEP 5 OF {TOTAL_STEPS}</Text>
+              <Text style={styles.headline}>Start scanning</Text>
+              <Text style={styles.bodyText}>
+                Anílog uses your camera to identify animals in real time. Allow camera access to start catching Animons.
               </Text>
-              {cameraRequested ? (
+              {cameraRequested && (
                 <View style={styles.statusBadge}>
-                  <Text style={styles.statusText}>
-                    {cameraPermission?.granted ? '✓ Camera ready' : '✗ Permission denied — you can enable it later in Settings'}
-                  </Text>
+                  <Text style={styles.statusText}>Camera preference saved</Text>
                 </View>
-              ) : null}
+              )}
               <View style={styles.btnStack}>
                 {!cameraRequested && (
                   <TouchableOpacity style={styles.primaryBtn} onPress={handleRequestCamera}>
@@ -308,46 +334,32 @@ export default function OnboardingScreen() {
             </View>
           )}
 
-          {/* ── Step 6 — Notifications Permission ────────────── */}
+          {/* ── Step 6 — Notifications permission ── */}
           {step === 6 && (
             <View style={styles.stepContainer}>
-              <Text style={styles.stepNumber}>STEP 6 OF {TOTAL_STEPS}</Text>
               <Text style={styles.permissionEmoji}>🔔</Text>
-              <Text style={styles.headline}>Stay Notified</Text>
-              <Text style={styles.tagline}>
-                Get alerts for rare Anímon sightings nearby and milestone unlocks.
+              <Text style={styles.stepLabel}>STEP 6 OF {TOTAL_STEPS}</Text>
+              <Text style={styles.headline}>Stay notified</Text>
+              <Text style={styles.bodyText}>
+                Get alerts for rare Animon sightings nearby and milestone unlocks.
               </Text>
-              {notifRequested ? (
+              {notifRequested && (
                 <View style={styles.statusBadge}>
                   <Text style={styles.statusText}>Notification preference saved</Text>
                 </View>
-              ) : null}
+              )}
               <View style={styles.btnStack}>
                 {!notifRequested && (
                   <TouchableOpacity style={styles.primaryBtn} onPress={handleRequestNotifications}>
                     <Text style={styles.primaryBtnText}>ALLOW NOTIFICATIONS</Text>
                   </TouchableOpacity>
                 )}
-                <TouchableOpacity style={styles.ghostBtn} onPress={advance}>
+                <TouchableOpacity style={styles.ghostBtn} onPress={handleFinish}>
                   <Text style={styles.ghostBtnText}>
-                    {notifRequested ? 'CONTINUE' : 'MAYBE LATER'}
+                    {notifRequested ? 'START MY JOURNEY' : 'MAYBE LATER'}
                   </Text>
                 </TouchableOpacity>
               </View>
-            </View>
-          )}
-
-          {/* ── Step 7 — Finish ───────────────────────────────── */}
-          {step === 7 && (
-            <View style={styles.stepContainer}>
-              <Text style={styles.finishEmoji}>🎉</Text>
-              <Text style={styles.headline}>You're all set!</Text>
-              <Text style={styles.tagline}>
-                Your party is ready. The world is out there — go explore.
-              </Text>
-              <TouchableOpacity style={styles.primaryBtn} onPress={handleFinish}>
-                <Text style={styles.primaryBtnText}>START YOUR JOURNEY</Text>
-              </TouchableOpacity>
             </View>
           )}
         </ScrollView>
@@ -356,6 +368,8 @@ export default function OnboardingScreen() {
   );
 }
 
+const W_MINUS_PAD = W - 48;
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -363,7 +377,6 @@ const styles = StyleSheet.create({
   },
   flex: { flex: 1 },
 
-  // Progress dots
   dotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -373,57 +386,54 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   dot: {
-    width: 8,
     height: 8,
     borderRadius: 4,
   },
-  dotActive:   { backgroundColor: colors.navDark,      width: 24 },
-  dotDone:     { backgroundColor: colors.accent                  },
-  dotInactive: { backgroundColor: colors.border                  },
+  dotActive:   { width: 24, backgroundColor: colors.navDark },
+  dotDone:     { width: 8,  backgroundColor: colors.accent  },
+  dotInactive: { width: 8,  backgroundColor: colors.border  },
 
-  // Scroll
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
     paddingBottom: 40,
   },
 
   stepContainer: {
     alignItems: 'center',
     gap: 16,
+    paddingTop: 8,
   },
 
-  // Logo mark (step 1)
   logoMark: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
+    width: 72,
+    height: 72,
+    borderRadius: 18,
     backgroundColor: colors.navDark,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
   },
   logoGlyph: {
     fontFamily: typography.fontFamily.bodyExtra,
-    fontSize: 40,
+    fontSize: 38,
     color: colors.textInverse,
-    lineHeight: 44,
+    lineHeight: 42,
   },
 
-  stepNumber: {
+  stepLabel: {
     fontFamily: typography.fontFamily.mono,
     fontSize: typography.fontSize.xs,
     color: colors.text3,
     letterSpacing: typography.letterSpacing.widest,
     textTransform: 'uppercase',
   },
-
   headline: {
     fontFamily: typography.fontFamily.bodyExtra,
     fontSize: typography.fontSize['3xl'],
@@ -431,119 +441,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: typography.fontSize['3xl'] * 1.2,
   },
-
-  tagline: {
+  bodyText: {
     fontFamily: typography.fontFamily.body,
     fontSize: typography.fontSize.md,
     color: colors.text2,
     textAlign: 'center',
-    lineHeight: typography.fontSize.md * 1.6,
-    maxWidth: W - 64,
+    lineHeight: typography.fontSize.md * 1.65,
+    maxWidth: W_MINUS_PAD,
   },
-
-  // Username input
-  input: {
-    width: '100%',
-    height: 52,
-    backgroundColor: colors.surface,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    fontFamily: typography.fontFamily.body,
-    fontSize: typography.fontSize.md,
-    color: colors.text1,
-    marginTop: 4,
-  },
-  inputError: {
-    borderColor: colors.error,
-  },
-  errorText: {
-    fontFamily: typography.fontFamily.body,
-    fontSize: typography.fontSize.sm,
-    color: colors.error,
-    alignSelf: 'flex-start',
-    marginTop: -8,
-  },
-
-  // Permission emojis
   permissionEmoji: {
     fontSize: 56,
     marginBottom: 4,
   },
-  finishEmoji: {
-    fontSize: 64,
-    marginBottom: 4,
-  },
 
-  // Status badge
-  statusBadge: {
-    backgroundColor: colors.surface,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    width: '100%',
-  },
-  statusText: {
-    fontFamily: typography.fontFamily.body,
-    fontSize: typography.fontSize.sm,
-    color: colors.text2,
-    textAlign: 'center',
-  },
-
-  btnStack: {
+  starterList: {
     width: '100%',
     gap: 10,
-    marginTop: 4,
+    marginVertical: 4,
   },
-
-  // Primary CTA
-  primaryBtn: {
-    width: '100%',
-    backgroundColor: colors.navDark,
-    borderRadius: 8,
-    height: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-    shadowColor: colors.navDark,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.22,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  primaryBtnText: {
-    fontFamily: typography.fontFamily.monoBold,
-    fontSize: typography.fontSize.sm,
-    color: colors.textInverse,
-    letterSpacing: typography.letterSpacing.wide,
-  },
-
-  // Ghost / skip button
-  ghostBtn: {
-    width: '100%',
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  ghostBtnText: {
-    fontFamily: typography.fontFamily.mono,
-    fontSize: typography.fontSize.sm,
-    color: colors.text2,
-    letterSpacing: typography.letterSpacing.label,
-  },
-
-  // Disabled button state
-  btnDisabled: {
-    opacity: 0.45,
-  },
-
-  // ── Starter selection cards (step 3) ────────────────────────────────────
   starterCard: {
     width: '100%',
     flexDirection: 'row',
@@ -551,8 +466,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1.5,
     borderColor: colors.border,
-    borderRadius: 10,
-    padding: 10,
+    borderRadius: 12,
+    padding: 12,
     gap: 12,
   },
   starterCardSelected: {
@@ -576,19 +491,8 @@ const styles = StyleSheet.create({
   },
   starterTypeRow: {
     flexDirection: 'row',
-    gap: 6,
-  },
-  starterTypeChip: {
-    backgroundColor: colors.border,
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  starterTypeText: {
-    fontFamily: typography.fontFamily.mono,
-    fontSize: 9,
-    color: colors.text2,
-    letterSpacing: typography.letterSpacing.label,
+    flexWrap: 'wrap',
+    gap: 4,
   },
   starterCheckmark: {
     width: 28,
@@ -604,29 +508,124 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // ── Starter naming inputs (step 4) ──────────────────────────────────────
-  namingRow: {
+  catchCard: {
     width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
   },
-  namingPhoto: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
+  catchCardPhoto: {
+    width: '100%',
+    height: 180,
     backgroundColor: colors.border,
   },
-  namingInput: {
-    flex: 1,
-    height: 48,
+  catchCardBody: {
+    padding: 14,
+    gap: 8,
+  },
+  catchCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  catchCardSpecies: {
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: typography.fontSize.lg,
+    color: colors.text1,
+  },
+  catchCardTypes: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+
+  fieldLabel: {
+    alignSelf: 'flex-start',
+    fontFamily: typography.fontFamily.bodySemiBold,
+    fontSize: typography.fontSize.sm,
+    color: colors.text2,
+    letterSpacing: typography.letterSpacing.label,
+    textTransform: 'uppercase',
+    marginTop: 4,
+  },
+  input: {
+    width: '100%',
+    height: 52,
     backgroundColor: colors.surface,
     borderWidth: 1.5,
     borderColor: colors.border,
     borderRadius: 8,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     fontFamily: typography.fontFamily.body,
-    fontSize: typography.fontSize.base,
+    fontSize: typography.fontSize.md,
     color: colors.text1,
+  },
+
+  statusBadge: {
+    width: '100%',
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  statusText: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.fontSize.sm,
+    color: colors.text2,
+    textAlign: 'center',
+  },
+
+  btnStack: {
+    width: '100%',
+    gap: 10,
+    marginTop: 4,
+  },
+  primaryBtn: {
+    width: '100%',
+    backgroundColor: colors.navDark,
+    borderRadius: 8,
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.navDark,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  primaryBtnText: {
+    fontFamily: typography.fontFamily.monoBold,
+    fontSize: typography.fontSize.sm,
+    color: colors.textInverse,
+    letterSpacing: typography.letterSpacing.wide,
+  },
+  ghostBtn: {
+    width: '100%',
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  ghostBtnText: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: typography.fontSize.sm,
+    color: colors.text2,
+    letterSpacing: typography.letterSpacing.label,
+  },
+  btnDisabled: {
+    opacity: 0.4,
+  },
+  mtSm: {
+    marginTop: 4,
   },
 });
