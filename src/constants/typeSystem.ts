@@ -19,16 +19,16 @@ export interface TypeDefinition {
 }
 
 export const TYPE_DEFINITIONS: Record<AnimonTypeName, TypeDefinition> = {
-  fire:     { label: 'Fire',     color: '#EF4444', textColor: '#FFFFFF' },
-  water:    { label: 'Water',    color: '#3B82F6', textColor: '#FFFFFF' },
-  grass:    { label: 'Grass',    color: '#22C55E', textColor: '#FFFFFF' },
-  electric: { label: 'Electric', color: '#EAB308', textColor: '#0F172A' },
-  ice:      { label: 'Ice',      color: '#06B6D4', textColor: '#FFFFFF' },
-  dragon:   { label: 'Dragon',   color: '#8B5CF6', textColor: '#FFFFFF' },
-  psychic:  { label: 'Psychic',  color: '#EC4899', textColor: '#FFFFFF' },
-  bug:      { label: 'Bug',      color: '#84CC16', textColor: '#0F172A' },
-  steel:    { label: 'Steel',    color: '#64748B', textColor: '#FFFFFF' },
-  ground:   { label: 'Ground',   color: '#D97706', textColor: '#FFFFFF' },
-  rock:     { label: 'Rock',     color: '#78716C', textColor: '#FFFFFF' },
-  light:    { label: 'Light',    color: '#F59E0B', textColor: '#0F172A' },
+  fire:     { label: 'Fire',     color: '#DC2626', textColor: '#FFFFFF' },
+  water:    { label: 'Water',    color: '#2563EB', textColor: '#FFFFFF' },
+  grass:    { label: 'Grass',    color: '#22C55E', textColor: '#0F172A' },  // unchanged color; textColor → dark
+  electric: { label: 'Electric', color: '#EAB308', textColor: '#0F172A' },  // unchanged
+  ice:      { label: 'Ice',      color: '#0E7490', textColor: '#FFFFFF' },
+  dragon:   { label: 'Dragon',   color: '#7C3AED', textColor: '#FFFFFF' },
+  psychic:  { label: 'Psychic',  color: '#DB2777', textColor: '#FFFFFF' },
+  bug:      { label: 'Bug',      color: '#84CC16', textColor: '#0F172A' },  // unchanged
+  steel:    { label: 'Steel',    color: '#475569', textColor: '#FFFFFF' },
+  ground:   { label: 'Ground',   color: '#B45309', textColor: '#FFFFFF' },
+  rock:     { label: 'Rock',     color: '#57534E', textColor: '#FFFFFF' },
+  light:    { label: 'Light',    color: '#F59E0B', textColor: '#0F172A' },  // unchanged
 };
