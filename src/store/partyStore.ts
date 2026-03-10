@@ -11,7 +11,7 @@ import type { Animon } from '../types/animon';
 import type { PartyAnimon, PartySlot } from '../types/party';
 
 const STORAGE_KEY = 'party_slots';
-const PARTY_SIZE = 6;
+export const PARTY_SIZE = 6;
 
 interface PartyState {
   /** Six slots — null means the slot is empty. */
@@ -76,7 +76,12 @@ export const usePartyStore = create<PartyState>((set, get) => ({
 AsyncStorage.getItem(STORAGE_KEY).then((val) => {
   if (!val) return;
   try {
-    const slots = JSON.parse(val) as (PartySlot | null)[];
+    const loaded = JSON.parse(val) as (PartySlot | null)[];
+    // Pad to current PARTY_SIZE in case the saved array is from an older build
+    const slots: (PartySlot | null)[] = Array(PARTY_SIZE).fill(null);
+    for (let i = 0; i < Math.min(loaded.length, PARTY_SIZE); i++) {
+      slots[i] = loaded[i] ?? null;
+    }
     usePartyStore.getState().hydrate(slots);
   } catch {
     // ignore malformed data
