@@ -22,7 +22,9 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <View style={styles.container}>
-      <View style={styles.iconDisc} />
+      <View style={styles.iconDisc}>
+        <Text style={styles.iconDiscSymbol}>◈</Text>
+      </View>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.description}>{description}</Text>
       {ctaLabel && onCta && (
@@ -52,11 +54,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     marginBottom: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconDiscSymbol: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: 20,
+    color: colors.text3,
   },
   title: {
     fontFamily: typography.fontFamily.bodyBold,
     fontSize: typography.fontSize.md,
-    color: colors.text2,
+    color: colors.text1,
     textAlign: 'center',
   },
   description: {

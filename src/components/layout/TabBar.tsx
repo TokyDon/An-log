@@ -46,6 +46,13 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
         onPress={() => navigation.navigate('index')}
       />
 
+      {/* Centre-left tab: Collection */}
+      <TabItem
+        routeName="anilog"
+        isFocused={focusedRouteName === 'anilog'}
+        onPress={() => navigation.navigate('anilog')}
+      />
+
       {/* Centre FAB */}
       <View style={styles.fabWrap}>
         <TouchableOpacity
@@ -63,11 +70,18 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
         </TouchableOpacity>
       </View>
 
-      {/* Right tab: Collection */}
+      {/* Centre-right tab: Stamps */}
       <TabItem
-        routeName="anilog"
-        isFocused={focusedRouteName === 'anilog'}
-        onPress={() => navigation.navigate('anilog')}
+        routeName="logbook"
+        isFocused={focusedRouteName === 'logbook'}
+        onPress={() => navigation.navigate('logbook')}
+      />
+
+      {/* Right tab: Profile */}
+      <TabItem
+        routeName="profile"
+        isFocused={focusedRouteName === 'profile'}
+        onPress={() => navigation.navigate('profile')}
       />
     </View>
   );
@@ -113,7 +127,7 @@ const FAB_SIZE = 54;
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.navDark,
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingTop: 8,

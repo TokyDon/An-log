@@ -46,7 +46,7 @@ function getTypeEmoji(primaryType: AnimonType): string {
   return map[primaryType] ?? '◈';
 }
 
-export function AnimonCard({ animon, onPress, compact = false, showPhoto = false }: AnimonCardProps) {
+export function AnimonCard({ animon, onPress, compact = false, showPhoto = true }: AnimonCardProps) {
   const primaryType = animon.types[0];
   const def = TYPE_DEFINITIONS[primaryType];
   const typeColor = def.color;
@@ -74,7 +74,7 @@ export function AnimonCard({ animon, onPress, compact = false, showPhoto = false
         />
       )}
       {/* Placeholder emoji — low opacity AI art stand-in */}
-      {!showPhoto && (
+      {(!showPhoto || !animon.photoUrl) && (
         <Text style={compact ? styles.compactEmoji : styles.emoji}>
           {getTypeEmoji(primaryType)}
         </Text>
@@ -193,9 +193,8 @@ const styles = StyleSheet.create({
     lineHeight: typography.fontSize.md * typography.lineHeight.label,
   },
   footerSpecies: {
-    fontFamily: typography.fontFamily.mono,
+    fontFamily: typography.fontFamily.body,
     fontSize: typography.fontSize.xs,
-    fontStyle: 'italic',
     lineHeight: typography.fontSize.xs * typography.lineHeight.label,
   },
   footerChips: {
@@ -211,7 +210,7 @@ const styles = StyleSheet.create({
   },
   footerAccession: {
     fontFamily: typography.fontFamily.mono,
-    fontSize: 8,
+    fontSize: typography.fontSize.xs,
     letterSpacing: typography.letterSpacing.label,
   },
   footerRegion: {
@@ -224,7 +223,7 @@ const styles = StyleSheet.create({
   // ── Compact card ───────────────────────────────────────────────────────────
   compactCard: {
     height: COMPACT_HEIGHT,
-    borderRadius: 10,
+    borderRadius: 12,
     overflow: 'hidden',
     flexDirection: 'column',
   },
