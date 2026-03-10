@@ -59,15 +59,16 @@ export default function RootLayout() {
     // SIGNED_IN fires after login/register.
     // SIGNED_OUT fires after signOut.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const onboardingComplete = await AsyncStorage.getItem('onboarding_complete');
+
       if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
         if (!session) {
           router.replace('/(auth)');
         } else {
-          const onboardingComplete = await AsyncStorage.getItem('onboarding_complete');
           if (!onboardingComplete) {
             router.replace('/onboarding');
           } else {
-            router.replace('/');
+            router.replace('/(tabs)');
           }
         }
       } else if (event === 'SIGNED_OUT') {

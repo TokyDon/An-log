@@ -11,10 +11,10 @@ import type { Animon } from '../types/animon';
 import type { PartyAnimon, PartySlot } from '../types/party';
 
 const STORAGE_KEY = 'party_slots';
-const PARTY_SIZE = 5;
+const PARTY_SIZE = 6;
 
 interface PartyState {
-  /** Five slots — null means the slot is empty. */
+  /** Six slots — null means the slot is empty. */
   slots: (PartySlot | null)[];
 
   /** Fill the first empty slot with an Anímon. No-op if party is full. */

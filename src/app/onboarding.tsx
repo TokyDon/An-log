@@ -175,7 +175,7 @@ export default function OnboardingScreen() {
       addToParty(selectedStarter, nickname.trim() || selectedStarter.species);
     }
     await AsyncStorage.setItem('onboarding_complete', 'true');
-    router.replace('/');
+    router.replace('/(tabs)');
   };
 
   return (
