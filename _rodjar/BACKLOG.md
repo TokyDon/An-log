@@ -58,12 +58,28 @@ TS CLEAN FIX — 2026-03-05: All token migration errors resolved. TypeScript: 0 
 
 | # | Priority | Feature | Notes | Status |
 |---|----------|---------|-------|--------|
-| F-001 | 🔴 High | Wire Gemini Vision AI | Implement `geminiVision.ts` — requires `EXPO_PUBLIC_GEMINI_API_KEY` in `.env` | ⏳ Not Started |
-| F-002 | 🔴 High | Wire Supabase backend | Create Supabase project, apply `001_initial_schema.sql`, fill `.env` | ⏳ Not Started |
-| F-003 | 🔴 High | Auth screens | Google/Apple login via Supabase — nothing persists without users | ⏳ Not Started |
-| F-004 | 🔴 High | Real camera capture | Replace simulated viewfinder with live `expo-camera` CameraView | ⏳ Not Started |
+| F-001 | 🔴 High | Wire Gemini Vision AI | `geminiVision.ts` fully implemented with mock mode. Needs `EXPO_PUBLIC_GEMINI_API_KEY` in `.env`. Get key from Google AI Studio. | ⚠️ Credentials only |
+| F-002 | 🔴 High | Wire Supabase backend | All service functions written (`animons.ts`, `auth.ts`, `scans.ts`, `storage.ts`). Needs: create Supabase project, run both migrations, add env vars to `.env`. | ⚠️ Credentials only |
+| F-003 | 🔴 High | Auth screens | ✅ DONE — email/password register, login, forgot password, session guard all implemented. GitHub #18-22 closed. | ✅ Complete |
+| F-004 | 🔴 High | Real camera capture | ✅ DONE — live `expo-camera` CameraView with 3s scan loop, lock-on animation, result card. `useCapture` 10-step flow. | ✅ Complete |
+| F-023 | 🔴 High | Email verification gate | Block first scan until email verified. Issue #23 open. `supabase.auth.getUser()` check needed before `consumeScan`. | ⏳ Not started |
+| F-025 | 🟡 Medium | Supabase profiles table | Issue #25 — check if `public.profiles` is in `001_initial_schema.sql`. May already exist. | ⏳ Check first |
+| F-028 | 🟡 Medium | SSO (Google + Apple) | Issue #28 — Expo OAuth config + Supabase provider setup + deep links. P1. | ⏳ Not started |
 | F-005 | 🟡 Medium | Friends system | Compare collections, friend activity feed | ⏳ Not Started |
 | F-006 | 🟡 Medium | Anílog+ subscription | Premium tier — post-MVP | ⏳ Not Started |
+
+### Auth Issues Status (2026-03-10)
+| Issue | Title | State |
+|-------|-------|-------|
+| #18 | Sign up screen | ✅ Closed — `/(auth)/register.tsx` |
+| #19 | Sign in screen (duplicate) | ✅ Closed — duplicate of #20 |
+| #20 | Sign in screen + session persistence | ✅ Closed — `/(auth)/login.tsx` |
+| #21 | Forgot password flow | ✅ Closed — inline in login.tsx |
+| #22 | Session persistence + auth guard | ✅ Closed — root `_layout.tsx` |
+| #23 | Email verification gate | 🔴 Open — not implemented |
+| #24 | Account settings | 🟡 Open — post-credentials |
+| #25 | Supabase profiles table | 🟡 Open — check migration |
+| #28 | SSO (Google + Apple) | 🟡 Open — P1, post-MVP |
 
 ---
 

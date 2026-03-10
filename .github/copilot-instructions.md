@@ -78,22 +78,37 @@ Always use: `_rodjar/design-brief-template.md`
 ---
 
 ## Current State (updated each session)
-### Last completed (session ending March 9, 2026)
-- ✅ All P0 issues (#1, #3–#7) and P1 issues (#12–#15) implemented on `feat/p1-features`
-- ✅ UX restructure: Party tab (replaces Discover), tabs renamed Collection/Stamps, onboarding 5→7 steps
-- ✅ White-page fix: partyStore manual AsyncStorage, `router.replace('/')`, font-loading screen
-- ✅ Dev seed: Domestic Shorthair Cat "Biscuit" gifted to party on first load (`dev_seed_v1` flag)
-- ✅ GitHub: #12–15 closed, #26 created+closed. Notion: Feature Registry Phase 2 → DONE, Screen Map updated
-- ✅ Active branch: `feat/p1-features`, latest commit: `594b670` (pending push — tokens scrubbed)
-- ✅ `.vscode/mcp.json` now uses VS Code `inputs` (no hardcoded token)
+### Last completed (2026-03-10 session)
+- ✅ Collection display bug FIXED — `anilog.tsx`, `logbook.tsx`, `profile.tsx` now merge local `collectionStore` animons + Supabase animons via `useMemo` (deduped by id). Starters visible immediately after onboarding without auth. (`42a73c0`)
+- ✅ Full design system pass — 7 commits, 0 TS errors:
+  - `AnimonCard.showPhoto` default: `false` → `true` (photos now visible by default)
+  - Party tab: type-color card backgrounds + `TypeTagChip` (matches Pokédex aesthetic)
+  - Collection tab: `showPhoto`, pill chips (borderRadius `3` → `99`)
+  - All screens: `paddingHorizontal` standardised to `16`
+  - Typography tokens enforced throughout (no more raw literals; no `mono` on UI labels)
+  - `TabBar.bg`: `colors.surface` → `colors.navDark` (correct token)
+- ✅ Auth screens ALL IMPLEMENTED (login, register, forgot password, auth guard, session persistence)
+- ✅ GitHub issues #18, #19, #20, #21, #22 CLOSED — all confirmed implemented
+- ✅ Active branch: `feat/auth-onboarding`, latest commit: `7f5d5b9`
+
+### What is genuinely NOT yet done
+- ❌ `.env` file missing — Supabase + Gemini credentials needed (user doesn't have Gemini key yet)
+- ❌ Supabase project not created — no real DB, no auth backend wired to real users
+- ❌ Email verification gate after sign-up (issue #23) — code not written
+- ❌ Supabase profiles table migration (issue #25) — need to check if in `001_initial_schema.sql`
+- ❌ SSO (Google/Apple) — issue #28, P1
 - ❌ `📱 Product Status` Notion page NOT YET CREATED
+- ❌ Screenshots not yet taken (dev server needed to view visual result)
 
 ### Immediate next actions (pick up here)
-1. Verify the cat "Biscuit" appears in the Party tab after clearing AsyncStorage (`dev_seed_v1`)
-2. Start Phase 3 P0 dev — Issue #4 first (`AnimonScanResult` type), then #3 (Gemini service), then #1 (camera capture)
-3. Create `📱 Product Status` Notion page under root `319daaca-aff7-8025-bd41-da8c4a4f959d`
+1. **Get credentials**: Create Supabase project → copy URL + anon key. Get Gemini API key from Google AI Studio. Create `.env` from `.env.example`.
+2. **Apply migrations**: Run `supabase/migrations/001_initial_schema.sql` + `002_daily_scans.sql` on the Supabase project.
+3. **Test end-to-end**: Boot Expo Go, register, complete onboarding, confirm cat in collection, open camera, scan real animal.
+4. **Implement #23**: Email verification gate before first scan.
+5. **Close tech-debt issue #16**: All mock data now has real persistence path stubbed.
 
 ### Key store rules
 - **All Zustand stores use manual AsyncStorage pattern** — NO `zustand/middleware` (causes white page on web/React 19)
 - AsyncStorage keys: `onboarding_complete`, `username`, `party_slots`, `achievements`, `dev_seed_v1`
-- Collection store is NOT persisted — Supabase-backed, requires auth (Phase 3)
+- **Collection store IS now persisted** (key: `collection_animons`) — seeded on onboarding, merged with Supabase at display layer
+- All 3 collection display screens use merge pattern: `useMemo` combining `collectionStore.animons` + `supabaseAnimons`, deduped by id
