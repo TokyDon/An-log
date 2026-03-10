@@ -24,9 +24,9 @@ export const typography = {
     md:    14,
     lg:    16,
     xl:    20,
-    '2xl': 26,
-    '3xl': 28,
-    '4xl': 36,
+    '2xl': 28,
+    '3xl': 32,
+    '4xl': 40,
   },
   lineHeight: {
     tight:  1.1,

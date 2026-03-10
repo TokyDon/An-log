@@ -1,33 +1,33 @@
 /**
- * Anílog Design Token — Colours v3
- * Clean Modern palette — neutral cool grey base, white surfaces.
- * All colour comes from game content (type chips and rarity badges).
+ * Anílog Design Token — Colours v3.1
+ * Field Lab palette — deep forest green base, amber gold accent.
+ * Expedition journal meets hi-tech bioScanner.
  */
 export const colors = {
 
   // ── Backgrounds ────────────────────────────────────────────────────────────
-  bg:       '#F1F4F9',
-  surface:  '#FFFFFF',
-  surface2: '#F8FAFC',
+  bg:       '#0D1F0F',
+  surface:  '#1A2E1C',
+  surface2: '#152317',
 
   // ── Borders ────────────────────────────────────────────────────────────────
-  border:       '#E2E8F0',
-  borderStrong: '#CBD5E1',
+  border:       '#2E4A2E',
+  borderStrong: '#3D6B3D',
 
   // ── Text ───────────────────────────────────────────────────────────────────
-  text1:       '#0F172A',
-  text2:       '#475569',
-  text3:       '#94A3B8',
-  textInverse: '#FFFFFF',
+  text1:       '#F0EDE4',  // warm off-white — never pure white
+  text2:       '#9BAF8A',  // muted sage green
+  text3:       '#5A7050',  // very muted — ghost/placeholder text
+  textInverse: '#F0EDE4',  // light text on dark surfaces (navDark, bezel)
 
-  // ── Accent (intentionally neutral — no colour favouritism) ─────────────────
-  accent:     '#64748B',
-  accentSoft: '#F1F5F9',
-  accentDeep: '#334155',
+  // ── Accent (amber gold — the LIFE colour) ──────────────────────────────────
+  accent:     '#D4A017',
+  accentSoft: '#2A3D20',  // muted green for chips / tags
+  accentDeep: '#B8860B',  // darker amber for done-state indicators
 
   // ── Device chrome ──────────────────────────────────────────────────────────
-  bezel:   '#1E293B',
-  navDark: '#0F172A',
+  bezel:   '#0A1408',
+  navDark: '#080E08',
 
   // ── Rarity ─────────────────────────────────────────────────────────────────
   rarity: {
@@ -38,12 +38,12 @@ export const colors = {
   },
 
   // ── Semantic ───────────────────────────────────────────────────────────────
-  success: '#22C55E',
-  error:   '#EF4444',
+  success: '#4CAF50',  // brighter green — pops on dark background
+  error:   '#E57373',
   warning: '#EAB308',
 
   // ── Overlays ───────────────────────────────────────────────────────────────
-  overlayDark: 'rgba(15,23,42,0.60)',
+  overlayDark: 'rgba(8,14,8,0.75)',
 
 } as const;
 

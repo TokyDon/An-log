@@ -193,8 +193,11 @@ export default function OnboardingScreen() {
           {/* ── Step 1 — What's an Animon? ── */}
           {step === 1 && (
             <View style={styles.stepContainer}>
-              <View style={styles.logoMark}>
-                <Text style={styles.logoGlyph}>Ā</Text>
+              <View style={styles.brandHero}>
+                <Text style={styles.brandWordmark}>ANÍLOG</Text>
+                <Text style={styles.brandTagline}>
+                  {`The world is full of creatures.\nStart capturing them.`}
+                </Text>
               </View>
               <Text style={styles.stepLabel}>STEP 1 OF {TOTAL_STEPS}</Text>
               <Text style={styles.headline}>What's an Animon?</Text>
@@ -391,9 +394,9 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
   },
-  dotActive:   { width: 24, backgroundColor: colors.navDark },
-  dotDone:     { width: 8,  backgroundColor: colors.accent  },
-  dotInactive: { width: 8,  backgroundColor: colors.border  },
+  dotActive:   { width: 24, backgroundColor: colors.accent },
+  dotDone:     { width: 8,  backgroundColor: colors.accentDeep },
+  dotInactive: { width: 8,  backgroundColor: colors.border },
 
   scrollContent: {
     flexGrow: 1,
@@ -408,6 +411,31 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
 
+  // Brand hero — Step 1 dramatic wordmark
+  brandHero: {
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: 28,
+    marginBottom: 4,
+  },
+  brandWordmark: {
+    fontFamily: typography.fontFamily.bodyExtra,
+    fontSize: 52,
+    letterSpacing: 14,
+    color: colors.accent,
+    textTransform: 'uppercase',
+  },
+  brandTagline: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.fontSize.md,
+    color: colors.text2,
+    textAlign: 'center',
+    letterSpacing: 0.4,
+    marginTop: 14,
+    lineHeight: typography.fontSize.md * 1.75,
+  },
+
+  // Legacy logo mark — kept for safety but replaced by brandHero on step 1
   logoMark: {
     width: 72,
     height: 72,
@@ -416,16 +444,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   logoGlyph: {
     fontFamily: typography.fontFamily.bodyExtra,
     fontSize: 38,
-    color: colors.textInverse,
+    color: colors.accent,
     lineHeight: 42,
   },
 
@@ -473,14 +498,19 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   starterCardSelected: {
-    borderColor: colors.navDark,
-    backgroundColor: colors.accentSoft,
+    borderColor: colors.accent,
+    backgroundColor: 'rgba(212,160,23,0.07)',
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.30,
+    shadowRadius: 10,
+    elevation: 6,
   },
   starterPhoto: {
     width: 56,
     height: 56,
     borderRadius: 8,
-    backgroundColor: colors.border,
+    backgroundColor: colors.surface2,
   },
   starterInfo: {
     flex: 1,
@@ -500,12 +530,12 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: colors.navDark,
+    backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
   starterCheckmarkText: {
-    color: colors.textInverse,
+    color: colors.bg,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -515,18 +545,18 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: colors.surface,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.35,
     shadowRadius: 10,
     elevation: 5,
   },
   catchCardPhoto: {
     width: '100%',
     height: 180,
-    backgroundColor: colors.border,
+    backgroundColor: colors.surface2,
   },
   catchCardBody: {
     padding: 14,
@@ -559,7 +589,7 @@ const styles = StyleSheet.create({
   input: {
     width: '100%',
     height: 52,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surface2,
     borderWidth: 1.5,
     borderColor: colors.border,
     borderRadius: 8,
@@ -576,12 +606,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
   },
   statusText: {
     fontFamily: typography.fontFamily.body,
     fontSize: typography.fontSize.sm,
-    color: colors.text2,
+    color: colors.success,
     textAlign: 'center',
   },
 
@@ -592,21 +622,21 @@ const styles = StyleSheet.create({
   },
   primaryBtn: {
     width: '100%',
-    backgroundColor: colors.navDark,
+    backgroundColor: colors.accent,
     borderRadius: 8,
     height: 52,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.navDark,
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.22,
+    shadowOpacity: 0.28,
     shadowRadius: 8,
     elevation: 6,
   },
   primaryBtnText: {
     fontFamily: typography.fontFamily.monoBold,
     fontSize: typography.fontSize.sm,
-    color: colors.textInverse,
+    color: colors.bg,
     letterSpacing: typography.letterSpacing.wide,
   },
   ghostBtn: {

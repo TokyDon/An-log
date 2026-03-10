@@ -71,7 +71,7 @@ export default function AnilogScreen() {
       {/* â”€â”€ Dark header â”€â”€ */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.wordmark}>ANÃLOG</Text>
+          <Text style={styles.wordmark}>ANÍLOG</Text>
           <Text style={styles.screenTitle}>My Collection</Text>
         </View>
         <View style={styles.specimenBadge}>
@@ -105,7 +105,7 @@ export default function AnilogScreen() {
                 style={[
                   styles.filterChipText,
                   isActive
-                    ? { color: typeColor ?? colors.text1 }
+                    ? { color: typeColor ?? colors.accent }
                     : styles.filterChipTextInactive,
                 ]}
               >
@@ -137,7 +137,7 @@ export default function AnilogScreen() {
           columnWrapperStyle={styles.row}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
-            <View style={{ width: CARD_WIDTH }}>
+            <View style={[{ width: CARD_WIDTH }, styles.cardWrapper]}>
               <AnimonCard animon={item} onPress={handleCardPress} />
             </View>
           )}
@@ -165,19 +165,20 @@ const styles = StyleSheet.create({
   wordmark: {
     fontFamily: typography.fontFamily.mono,
     fontSize: typography.fontSize.sm,
-    color: colors.text3,
-    letterSpacing: 4,
+    color: colors.accent,
+    letterSpacing: typography.letterSpacing.widest,
     textTransform: 'uppercase',
+    marginBottom: 3,
   },
   screenTitle: {
     fontFamily: typography.fontFamily.bodySemiBold,
     fontSize: typography.fontSize['3xl'],
-    color: colors.textInverse,
+    color: colors.text1,
     lineHeight: typography.fontSize['3xl'] * typography.lineHeight.tight,
   },
   specimenBadge: {
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: colors.accent,
     borderRadius: 3,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -213,8 +214,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   filterChipActive: {
-    backgroundColor: colors.surface2,
-    borderColor: colors.text1,
+    backgroundColor: 'rgba(212,160,23,0.10)',
+    borderColor: colors.accent,
   },
   filterChipText: {
     fontFamily: typography.fontFamily.bodyMedium,
@@ -222,7 +223,7 @@ const styles = StyleSheet.create({
     letterSpacing: typography.letterSpacing.label,
   },
   filterChipTextInactive: {
-    color: colors.text2,
+    color: colors.text3,
   },
 
   // Grid
@@ -235,5 +236,12 @@ const styles = StyleSheet.create({
   },
   row: {
     gap: COLUMN_GAP,
+  },
+  cardWrapper: {
+    borderTopWidth: 2,
+    borderTopColor: colors.accent,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    overflow: 'hidden',
   },
 });
