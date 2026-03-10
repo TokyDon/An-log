@@ -1,51 +1,49 @@
 /**
- * Anílog Design Token — Colours v4
- * Neutral specimen-log palette.
- * UI recedes; Animon images and type colours provide all the visual interest.
+ * Anílog Design Token — Colours v5 (Light Mode)
+ * Clean naturalist field-journal palette.
+ * White/light-grey surfaces. Dark ink text. Type & rarity = only accent colours.
  */
 export const colors = {
 
-  // ── Backgrounds (near-black dark mode) ────────────────────────────────────
-  bg:       '#111111',   // near-black — premium dark, not green
-  surface:  '#1C1C1E',   // iOS system-grouped secondary (very slightly warm black)
-  surface2: '#2C2C2E',   // iOS tertiary — slightly lighter for inputs, chips
+  // ── Backgrounds ────────────────────────────────────────────────────────────
+  bg:       '#FFFFFF',   // pure white — page background
+  surface:  '#F5F5F5',   // very light grey — cards, panels
+  surface2: '#EBEBEB',   // slightly darker — input fields, inactive chips, dividers
 
   // ── Borders ────────────────────────────────────────────────────────────────
-  border:       '#3A3A3C',   // subtle dark separator
-  borderStrong: '#545456',   // dividers that need to be seen
+  border:       '#E0E0E0',   // subtle hairline separators
+  borderStrong: '#B0B0B0',   // visible dividers, input outlines
 
   // ── Text ───────────────────────────────────────────────────────────────────
-  text1:       '#F5F5F5',  // near-white — primary text
-  text2:       '#AEAEB2',  // secondary — iOS label secondary grey
-  text3:       '#636366',  // tertiary — ghost/placeholder
-  textInverse: '#111111',  // dark text on light/amber surfaces
+  text1:       '#111111',  // near-black — primary body / headings
+  text2:       '#555555',  // secondary — labels, metadata
+  text3:       '#999999',  // tertiary — placeholder, ghost
+  textInverse: '#FFFFFF',  // white text — on dark/coloured buttons
 
-  // ── Accent (restrained — used ONLY for primary action buttons) ─────────────
-  // Not amber. Not green. A cool slate-blue that signals "action" without
-  // competing with type chip colours or animon images.
-  accent:     '#4F8EF7',   // clear action blue (accessible on dark bg)
-  accentSoft: '#1C2D4A',   // very dark blue tint for selected chip backgrounds
-  accentDeep: '#2563EB',   // deeper blue for pressed states
+  // ── Accent (action blue — primary CTAs only) ───────────────────────────────
+  accent:     '#2563EB',   // strong action blue (WCAG AA on white)
+  accentSoft: '#EFF6FF',   // very pale blue tint — selected chip bg
+  accentDeep: '#1D4ED8',   // pressed / deep state
 
   // ── Device chrome ──────────────────────────────────────────────────────────
-  bezel:   '#000000',
-  navDark: '#0A0A0A',
+  bezel:   '#FFFFFF',
+  navDark: '#FAFAFA',      // tab bar / nav background (almost white)
 
-  // ── Rarity (these are the ONLY high-chroma colours in the whole app) ───────
+  // ── Rarity (the ONLY high-chroma colours in the app) ──────────────────────
   rarity: {
-    common:   '#94A3B8',   // cool grey
-    uncommon: '#22C55E',   // green
-    rare:     '#6366F1',   // indigo
-    glossy:   '#F59E0B',   // amber — ONLY glossy gets this colour
+    common:   '#94A3B8',
+    uncommon: '#16A34A',   // green
+    rare:     '#4F46E5',   // indigo
+    glossy:   '#D97706',   // amber — only glossy gets this
   },
 
   // ── Semantic ───────────────────────────────────────────────────────────────
-  success: '#22C55E',
-  error:   '#EF4444',
-  warning: '#F59E0B',
+  success: '#16A34A',
+  error:   '#DC2626',
+  warning: '#D97706',
 
   // ── Overlays ───────────────────────────────────────────────────────────────
-  overlayDark: 'rgba(0,0,0,0.72)',
+  overlayDark: 'rgba(0,0,0,0.55)',
 
 } as const;
 

@@ -134,26 +134,28 @@ const styles = StyleSheet.create({
 
   // ── Header ─────────────────────────────────────────────────────────────────
   header: {
-    backgroundColor: colors.navDark,
+    backgroundColor: colors.bg,
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 22,
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   wordmark: {
     fontFamily: typography.fontFamily.mono,
-    fontSize: 14,
+    fontSize: 13,
     letterSpacing: typography.letterSpacing.widest,
-    color: colors.text2,
+    color: colors.text3,
     marginBottom: 4,
   },
   screenTitle: {
     fontFamily: typography.fontFamily.bodyBold,
-    fontSize: 24,
+    fontSize: 22,
     color: colors.text1,
-    lineHeight: 26,
+    lineHeight: 24,
   },
   partyBadge: {
     backgroundColor: colors.surface2,
@@ -166,16 +168,17 @@ const styles = StyleSheet.create({
   partyBadgeText: {
     fontFamily: typography.fontFamily.monoBold,
     fontSize: typography.fontSize.sm,
-    color: colors.text1,
+    color: colors.text2,
     letterSpacing: typography.letterSpacing.wide,
   },
 
   // ── Scroll ─────────────────────────────────────────────────────────────────
-  scroll: { flex: 1 },
+  scroll: { flex: 1, backgroundColor: colors.bg },
   scrollContent: {
     padding: 16,
     gap: 14,
     paddingBottom: 40,
+    backgroundColor: colors.bg,
   },
 
   // ── Shared card ─────────────────────────────────────────────────────────────
@@ -196,10 +199,10 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.40,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
   typeBar: {
     width: 5,
@@ -215,6 +218,7 @@ const styles = StyleSheet.create({
     width: CARD_PHOTO_SIZE,
     height: CARD_PHOTO_SIZE,
     backgroundColor: colors.surface2,
+    borderRadius: 8,
   },
   photoWrap: {
     width: CARD_PHOTO_SIZE,
@@ -236,8 +240,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   nickname: {
-    fontFamily: typography.fontFamily.bodyExtra,
-    fontSize: typography.fontSize.lg,
+    fontFamily: typography.fontFamily.bodySemiBold,
+    fontSize: 15,
     color: colors.text1,
     flex: 1,
   },
@@ -247,7 +251,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
   },
   levelText: {
     fontFamily: typography.fontFamily.monoBold,
@@ -257,7 +261,7 @@ const styles = StyleSheet.create({
   },
   species: {
     fontFamily: typography.fontFamily.mono,
-    fontSize: typography.fontSize.xs,
+    fontSize: typography.fontSize.sm,
     color: colors.text2,
     letterSpacing: typography.letterSpacing.label,
   },
@@ -275,13 +279,13 @@ const styles = StyleSheet.create({
   typeChipText: {
     fontFamily: typography.fontFamily.mono,
     fontSize: typography.fontSize.xs,
-    color: colors.text3,
+    color: colors.text2,
     letterSpacing: typography.letterSpacing.label,
   },
 
   // ── Empty slot card ─────────────────────────────────────────────────────────
   emptyCard: {
-    backgroundColor: colors.surface2,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: colors.border,

@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: CORNER,
     height: CORNER,
-    borderColor: colors.text1,
+    borderColor: '#FFFFFF',
   },
   cornerTL: {
     top: 0, left: 0,
@@ -651,9 +651,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0, right: 0,
     height: 2,
-    backgroundColor: colors.text1,
+    backgroundColor: '#FFFFFF',
     opacity: 0.75,
-    shadowColor: colors.text1,
+    shadowColor: '#FFFFFF',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.80,
     shadowRadius: 6,
@@ -662,7 +662,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontFamily: typography.fontFamily.mono,
     fontSize: 13,
-    color: colors.text1,
+    color: '#FFFFFF',
     letterSpacing: 2,
   },
 
@@ -670,14 +670,14 @@ const styles = StyleSheet.create({
   topBar: {
     position: 'absolute',
     top: 0, left: 0, right: 0,
-    backgroundColor: colors.bezel,
+    backgroundColor: 'rgba(0,0,0,0.65)',
     paddingTop: 52,
     paddingBottom: 12,
     paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderStrong,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
   },
   closeBtn: {
     width: 32,
@@ -701,17 +701,17 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   scanBadge: {
-    backgroundColor: colors.surface2,
+    backgroundColor: 'rgba(0,0,0,0.55)',
     borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(255,255,255,0.15)',
   },
   scanBadgeText: {
     fontFamily: typography.fontFamily.monoBold,
     fontSize: 11,
-    color: colors.accent,
+    color: '#FFFFFF',
     letterSpacing: 0.5,
   },
 
@@ -719,9 +719,9 @@ const styles = StyleSheet.create({
   controlPanel: {
     position: 'absolute',
     bottom: 0, left: 0, right: 0,
-    backgroundColor: colors.bezel,
+    backgroundColor: colors.bg,
     borderTopWidth: 1,
-    borderTopColor: colors.borderStrong,
+    borderTopColor: colors.border,
     paddingVertical: 24,
     paddingHorizontal: 28,
     paddingBottom: 44,
@@ -733,7 +733,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 10,
-    backgroundColor: colors.borderStrong,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -741,7 +741,7 @@ const styles = StyleSheet.create({
   },
   flashIcon: {
     fontSize: 18,
-    color: colors.textInverse,
+    color: colors.text1,
   },
   startBtn: {
     flex: 1,
@@ -749,7 +749,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     borderRadius: 14,
     paddingVertical: 16,
-    minHeight: 48,
+    minHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -769,7 +769,7 @@ const styles = StyleSheet.create({
   stopBtn: {
     flex: 1,
     marginHorizontal: 16,
-    backgroundColor: colors.surface2,
+    backgroundColor: colors.bg,
     borderWidth: 1.5,
     borderColor: colors.error,
     borderRadius: 14,
@@ -786,21 +786,21 @@ const styles = StyleSheet.create({
   statusPill: {
     flex: 1,
     marginHorizontal: 16,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: 'rgba(255,255,255,0.15)',
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
   },
   statusPillLocked: {
     borderColor: colors.success,
-    backgroundColor: 'rgba(34,197,94,0.08)',
+    backgroundColor: 'rgba(22,163,74,0.15)',
   },
   statusPillText: {
     fontFamily: typography.fontFamily.monoBold,
     fontSize: 12,
-    color: colors.text3,
+    color: '#FFFFFF',
     letterSpacing: 1.5,
   },
 
@@ -810,18 +810,18 @@ const styles = StyleSheet.create({
     bottom: 140,
     left: 24,
     right: 24,
-    backgroundColor: 'rgba(15,23,42,0.92)',
+    backgroundColor: 'rgba(0,0,0,0.8)',
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 18,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
   },
   inlineToastText: {
     fontFamily: typography.fontFamily.body,
     fontSize: typography.fontSize.sm,
-    color: colors.warning,
+    color: '#FFFFFF',
     textAlign: 'center',
   },
 
@@ -852,7 +852,7 @@ const styles = StyleSheet.create({
   captureConfirm: {
     fontFamily: typography.fontFamily.monoBold,
     fontSize: 13,
-    color: colors.success,
+    color: colors.accent,
     letterSpacing: 1.5,
     textAlign: 'center',
   },
@@ -879,11 +879,12 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.body,
     fontSize: typography.fontSize.sm,
     color: colors.text2,
+    fontStyle: 'italic',
   },
   resultConfidence: {
     fontFamily: typography.fontFamily.mono,
     fontSize: typography.fontSize.xs,
-    color: colors.text2,
+    color: colors.text3,
     letterSpacing: 1,
   },
   resultTags: {
@@ -924,7 +925,7 @@ const styles = StyleSheet.create({
   },
   retryBtn: {
     flex: 1,
-    backgroundColor: colors.surface2,
+    backgroundColor: colors.surface,
     borderWidth: 1.5,
     borderColor: colors.border,
     borderRadius: 14,
@@ -939,7 +940,7 @@ const styles = StyleSheet.create({
   },
   addBtn: {
     flex: 2,
-    backgroundColor: colors.surface2,
+    backgroundColor: colors.surface,
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
@@ -956,7 +957,7 @@ const styles = StyleSheet.create({
   // â”€â”€ Scan limit overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   scanLimitOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.88)',
+    backgroundColor: colors.bg,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 32,
@@ -993,12 +994,12 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   scanLimitPrimary: {
-    backgroundColor: colors.navDark,
+    backgroundColor: colors.accent,
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.text3,
+    borderColor: colors.accentDeep,
   },
   scanLimitPrimaryText: {
     fontFamily: typography.fontFamily.monoBold,

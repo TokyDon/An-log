@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
   },
   brandWordmark: {
     fontFamily: typography.fontFamily.bodyExtra,
-    fontSize: 52,
+    fontSize: 40,
     letterSpacing: 8,
     color: colors.text1,
     textTransform: 'uppercase',
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 18,
-    backgroundColor: colors.navDark,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   starterCheckmarkText: {
-    color: colors.text1,
+    color: colors.textInverse,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -589,9 +589,9 @@ const styles = StyleSheet.create({
   input: {
     width: '100%',
     height: 52,
-    backgroundColor: colors.surface2,
+    backgroundColor: colors.bg,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     borderRadius: 8,
     paddingHorizontal: 16,
     fontFamily: typography.fontFamily.body,
@@ -636,7 +636,7 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     fontFamily: typography.fontFamily.monoBold,
     fontSize: typography.fontSize.sm,
-    color: colors.bg,
+    color: colors.textInverse,
     letterSpacing: typography.letterSpacing.wide,
   },
   ghostBtn: {

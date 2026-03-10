@@ -6,7 +6,7 @@
  * Route: /animon/[id]
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,11 @@ import { typography } from '../../constants/typography';
 import { RarityBadge } from '../../components/ui/RarityBadge';
 import { TypeTagChip } from '../../components/ui/TypeTagChip';
 import { useCollectionStore } from '../../store/collectionStore';
+import { SPECIES_REGISTRY } from '../../data/speciesRegistry';
+import type { SpeciesEntry } from '../../data/speciesRegistry';
+import { getIllustrationUrl, getCapturePhotoUrl } from '../../services/supabase/storage';
+import { getAnimon } from '../../services/supabase/animons';
+import type { Animon } from '../../types/animon';
 
 const { height: H } = Dimensions.get('window');
 const HERO_HEIGHT = 280;
@@ -75,7 +80,7 @@ export default function AnimonDetailScreen() {
         />
         {/* Gradient fade at bottom */}
         <LinearGradient
-          colors={['transparent', 'rgba(26,18,8,0.88)']}
+          colors={['transparent', 'rgba(17,17,17,0.82)']}
           style={styles.heroGradient}
         />
         {/* Species name on gradient */}
@@ -218,7 +223,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: 'rgba(26,18,8,0.70)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -233,7 +238,7 @@ const styles = StyleSheet.create({
   // Bottom sheet
   sheet: {
     flex: 1,
-    backgroundColor: colors.surface2,
+    backgroundColor: colors.bg,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
@@ -273,7 +278,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: colors.surface2,
+    backgroundColor: colors.surface,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -284,13 +289,13 @@ const styles = StyleSheet.create({
   idLabel: {
     fontFamily: typography.fontFamily.mono,
     fontSize: 11,
-    color: colors.text1,
+    color: colors.text3,
     letterSpacing: 1.5,
   },
   idValue: {
     fontFamily: typography.fontFamily.monoBold,
     fontSize: 16,
-    color: colors.text3,
+    color: colors.text1,
     letterSpacing: 1,
   },
 
@@ -305,13 +310,13 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: '44%',
     height: 80,
-    backgroundColor: colors.bezel,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
     gap: 6,
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: colors.border,
   },
   statLabel: {
     fontFamily: typography.fontFamily.mono,
@@ -320,9 +325,9 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
   statValue: {
-    fontFamily: typography.fontFamily.monoBold,
+    fontFamily: typography.fontFamily.bodySemiBold,
     fontSize: 17,
-    color: colors.accent,
+    color: colors.text1,
   },
 
   // Capture notes

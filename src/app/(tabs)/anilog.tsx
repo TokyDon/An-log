@@ -155,26 +155,28 @@ const styles = StyleSheet.create({
 
   // Dark forestFloor header â€” mirrors Discover screen
   header: {
-    backgroundColor: colors.navDark,
+    backgroundColor: colors.bg,
     paddingHorizontal: SIDE_PAD,
     paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   wordmark: {
     fontFamily: typography.fontFamily.mono,
     fontSize: typography.fontSize.sm,
-    color: colors.text2,
+    color: colors.text3,
     letterSpacing: typography.letterSpacing.widest,
     textTransform: 'uppercase',
     marginBottom: 3,
   },
   screenTitle: {
-    fontFamily: typography.fontFamily.bodySemiBold,
-    fontSize: typography.fontSize['3xl'],
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: typography.fontSize.xl,
     color: colors.text1,
-    lineHeight: typography.fontSize['3xl'] * typography.lineHeight.tight,
+    lineHeight: typography.fontSize.xl * typography.lineHeight.tight,
   },
   specimenBadge: {
     backgroundColor: colors.surface2,
@@ -211,7 +213,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   filterChipInactive: {
-    backgroundColor: colors.surface2,
+    backgroundColor: colors.surface,
     borderColor: colors.border,
   },
   filterChipActive: {
