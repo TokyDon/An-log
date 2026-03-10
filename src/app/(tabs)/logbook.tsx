@@ -12,6 +12,7 @@ import { colors } from '../../constants/colors';
 import { typography } from '../../constants/typography';
 import { RarityBadge } from '../../components/ui/RarityBadge';
 import { useCollection } from '../../features/collection/useCollection';
+import { useCollectionStore } from '../../store/collectionStore';
 import { useAchievementStore } from '../../store/achievementStore';
 import { ACHIEVEMENTS } from '../../constants/achievements';
 
@@ -40,7 +41,7 @@ const sectionRuleStyles = StyleSheet.create({
   wrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     marginBottom: 12,
     gap: 10,
   },
@@ -55,7 +56,12 @@ const sectionRuleStyles = StyleSheet.create({
 });
 
 export default function MilestonesScreen() {
-  const { data: animons = [] } = useCollection();
+  const localAnimons = useCollectionStore((s) => s.animons);
+  const { data: supabaseAnimons = [] } = useCollection();
+  const animons = React.useMemo(() => {
+    const localIds = new Set(localAnimons.map((a) => a.id));
+    return [...localAnimons, ...supabaseAnimons.filter((a) => !localIds.has(a.id))];
+  }, [localAnimons, supabaseAnimons]);
   const isUnlocked = useAchievementStore((s) => s.isUnlocked);
 
   const uniqueSpecies = new Set(animons.map((a) => a.species)).size;
@@ -140,7 +146,7 @@ export default function MilestonesScreen() {
                 <View
                   style={[
                     styles.achievementStripe,
-                    { backgroundColor: a.unlocked ? accentColor : '#6B6B6B' },
+                    { backgroundColor: a.unlocked ? accentColor : colors.text3 },
                   ]}
                 />
                 {/* Content */}
@@ -177,7 +183,7 @@ const styles = StyleSheet.create({
   // Light header — matches Party and Collection tabs
   header: {
     backgroundColor: colors.bg,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 22,
     flexDirection: 'row',
@@ -211,13 +217,13 @@ const styles = StyleSheet.create({
   specimenBadgeText: {
     fontFamily: typography.fontFamily.mono,
     fontSize: typography.fontSize.xs,
-    color: colors.accent,
+    color: colors.text2,
     letterSpacing: typography.letterSpacing.label,
   },
 
   // Progress gauge
   gaugePanel: {
-    marginHorizontal: 20,
+    marginHorizontal: 16,
     marginBottom: 24,
     backgroundColor: colors.surface,
     borderRadius: 4,
@@ -231,10 +237,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   gaugeLabel: {
-    fontFamily: typography.fontFamily.bodyMedium,
-    fontSize: typography.fontSize.sm,
-    color: colors.text2,
-    letterSpacing: typography.letterSpacing.label,
+    fontFamily: typography.fontFamily.mono,
+    fontSize: typography.fontSize.xs,
+    color: colors.text3,
+    letterSpacing: typography.letterSpacing.widest,
     textTransform: 'uppercase',
   },
   gaugeFraction: {
@@ -261,7 +267,7 @@ const styles = StyleSheet.create({
     color: colors.text3,
     marginTop: 8,
     textAlign: 'right',
-    letterSpacing: 1,
+    letterSpacing: typography.letterSpacing.wide,
   },
 
   // Rarity grid — cardStock cells
@@ -269,7 +275,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     marginBottom: 24,
   },
   rarityCell: {
@@ -283,13 +289,13 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   rarityCount: {
-    fontFamily: typography.fontFamily.monoBold,
+    fontFamily: typography.fontFamily.bodyBold,
     fontSize: typography.fontSize['4xl'],
     color: colors.text1,
     marginTop: 8,
   },
   rarityLabel: {
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.mono,
     fontSize: typography.fontSize.xs,
     textTransform: 'uppercase',
     color: colors.text3,
@@ -299,7 +305,7 @@ const styles = StyleSheet.create({
 
   // Achievement cards — parchment
   achievementList: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     gap: 12,
     marginBottom: 8,
   },
