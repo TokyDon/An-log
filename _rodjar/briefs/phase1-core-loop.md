@@ -292,11 +292,14 @@ The species registry is the single source of truth for all curated Animon data. 
 
 #### TypeScript Interface
 
+> ⚠️ **AMENDED (post-PM session):** Interface now includes `ageStage` and `speciesId` for age variants. See §7.2.
+
 ```typescript
 import type { AnimonType } from '../types/animon';
 import type { AnimonRarity } from '../types/animon';
 
 export type SpeciesCategory = 'bird' | 'mammal' | 'insect' | 'reptile' | 'amphibian' | 'fish';
+export type AgeStage = 'juvenile' | 'adult';
 
 export interface SpeciesBaseStats {
   speed: number;    // 1–100
@@ -306,8 +309,20 @@ export interface SpeciesBaseStats {
 }
 
 export interface SpeciesEntry {
-  /** Slug used as DB key and illustration filename. e.g. 'european-robin' */
+  /**
+   * Unique entry ID. For age-variant species: '{species}-juvenile' | '{species}-adult'.
+   * For single-stage species: '{species}' (no suffix — e.g. 'house-sparrow').
+   * This is used as the DB key in public.animons.species.
+   */
   id: string;
+  /**
+   * Groups juvenile/adult variants for the same biological species.
+   * For species without variants: speciesId === id.
+   * For variants: speciesId is the base slug, e.g. 'european-robin'.
+   */
+  speciesId: string;
+  /** Whether this entry is a juvenile, adult, or the only stage */
+  ageStage: AgeStage;
   commonName: string;
   scientificName: string;
   category: SpeciesCategory;
@@ -317,11 +332,13 @@ export interface SpeciesEntry {
   flavourText: string;
   baseStats: SpeciesBaseStats;
   /**
-   * Filename slug for the illustration.
-   * Full URL: `${SUPABASE_URL}/storage/v1/object/public/species-illustrations/${illustrationKey}.png`
-   * Convention: illustrationKey === id (enforce this in code review)
+   * Filename slug for the illustration — used with getIllustrationUrl().
+   * Convention: illustrationKey === id (enforce this in code review).
+   * e.g. 'european-robin-juvenile.png', 'european-robin-adult.png'
    */
   illustrationKey: string;
+  /** Visual/behavioural hints embedded in the Gemini prompt for accuracy */
+  identificationHints: string[];
 }
 ```
 
@@ -525,29 +542,39 @@ The full sequence from lock-on confirmation to collection is:
 
 ### 3.4 Illustration Storage — Supabase Storage
 
+> ⚠️ **AMENDED (post-PM session):** Both storage buckets are **PRIVATE**. See §7.1 for rationale.
+
 **Bucket name:** `species-illustrations`  
-**Access policy:** `PUBLIC` (unauthenticated read — illustrations are not user-private)  
+**Access policy:** `PRIVATE` — illustrations are a product USP; restrict to authenticated users only  
 **File format:** PNG, recommended ~600×600px, transparent background  
 **Naming convention:** `{illustrationKey}.png` where `illustrationKey === speciesEntry.id`
 
-**URL pattern used in app:**
+**URL pattern used in app — signed URLs only:**
 
 ```typescript
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
-
-export function getIllustrationUrl(illustrationKey: string): string {
-  return `${SUPABASE_URL}/storage/v1/object/public/species-illustrations/${illustrationKey}.png`;
+// src/services/supabase/storage.ts
+export async function getIllustrationUrl(illustrationKey: string): Promise<string | null> {
+  const { data, error } = await supabase.storage
+    .from('species-illustrations')
+    .createSignedUrl(`${illustrationKey}.png`, 300); // 5-minute expiry for display tiles
+  if (error || !data?.signedUrl) return null;
+  return data.signedUrl;
 }
 ```
 
-This function is called in `AnimonCard`, `RevealScreen`, and `AnimonDetail` components.
+**NEVER use the `/object/public/` path pattern** — that only works for public buckets.
 
-**Fallback:** If the illustration fails to load (404 or network error), show a placeholder silhouette matching the species category (bird/mammal/insect/reptile/fish).
+This function is called in `AnimonCard`, `RevealScreen`, and `AnimonDetail` components. Each call requires an active authenticated Supabase session. Signed URL expiry is 300 seconds for collection tiles, 60 seconds for detail-screen user photos.
+
+**Fallback:** If the signed URL call fails (network, auth error) show a placeholder silhouette matching the species category (bird/mammal/insect/reptile/fish).
 
 **User capture photos:**  
 Bucket: `animon-photos` (PRIVATE)  
 Access: Authenticated only via RLS — users can only access their own photos.  
-URL for display: Generate a short-lived signed URL (60s expiry) at the point of display on the detail screen, using `supabase.storage.from('animon-photos').createSignedUrl(path, 60)`.
+URL for display: Generate a short-lived signed URL (60s expiry) at the point of display on the detail screen:
+```typescript
+const { data } = await supabase.storage.from('animon-photos').createSignedUrl(path, 60);
+```
 
 ---
 
@@ -776,4 +803,152 @@ Tasks are sized S (≤half day), M (1 day), L (2–3 days). Execute in this orde
 | OQ-2 | Should `consumed_scan` be logged even when Gemini returns `screen_detected`? Current spec: no (scan not consumed). Confirm this is the intended anti-abuse behaviour. | Founder | Open |
 | OQ-3 | Auto-confirm countdown on reveal screen: 3 seconds or require explicit tap? Auto-confirm is more magical but risks accidental saves. | Founder | Open |
 | OQ-4 | `gemini-1.5-flash` API costs at scale — set a Gemini API quota/alert in GCP before launch to prevent unexpected bills. | Founder | Action required |
-| OQ-5 | Supabase Storage public bucket for `species-illustrations` — confirm public access is intentional (illustrations are not user-private). | Founder | Confirm before deploy |
+| OQ-5 | ~~Supabase Storage public bucket for `species-illustrations` — confirm public access is intentional.~~ **RESOLVED:** Both buckets are PRIVATE. See §7.1. | Founder | ✅ Resolved |
+
+---
+
+## 7. Architecture Amendments (post-PM session decisions)
+
+These decisions were made after the PM subagent wrote the spec above. They supersede any conflicting text in §§1–5.
+
+---
+
+### 7.1 All Supabase Storage Buckets Are PRIVATE
+
+**Decision:** Both `species-illustrations` and `animon-photos` are **private** Supabase Storage buckets. Unauthenticated read access is disabled on both.
+
+**Rationale:** Species illustrations are a core product USP and competitive moat. Making them publicly accessible allows competitors to scrape the entire illustration library via a simple enumeration of `illustrationKey` slugs. Private buckets require an authenticated session, which means only paying/registered users can access illustrations.
+
+**Implementation rule:**
+- **Never** use the `/object/public/` URL pattern for either bucket
+- **Always** use `supabase.storage.from(bucket).createSignedUrl(path, expiry)` to generate display URLs
+- All components that display illustrations (`AnimonCard`, `RevealScreen`, `AnimonDetail`) must call the async `getIllustrationUrl(illustrationKey)` helper and handle `null` with a placeholder silhouette
+- Signed URL expiry: **300 seconds** for collection tiles, **60 seconds** for user capture photos on detail screen
+- Signed URLs are generated at render time — do not cache them to AsyncStorage (they expire)
+
+**Supabase bucket configuration:**
+```
+species-illustrations  → Private, no public policy, RLS: authenticated users only (read)
+animon-photos          → Private, RLS: authenticated, user_id match only (read + insert own)
+```
+
+---
+
+### 7.2 Age Variant Architecture
+
+**Decision:** Species with visually distinct juvenile and adult forms are represented as **two separate `SpeciesEntry` records** in the registry. Both are independently collectible.
+
+**Rationale:** Juveniles look different enough from adults that Gemini will identify them separately. A juvenile robin and adult robin are interesting distinct finds. The data model supports a future evolution mechanic (Phase 2) where a juvenile can evolve to adult once collected.
+
+**Species with age variants (7 species = 14 entries):**
+
+| Base Species | Juvenile ID | Adult ID |
+|---|---|---|
+| European Robin | `european-robin-juvenile` | `european-robin-adult` |
+| Common Blackbird | `common-blackbird-juvenile` | `common-blackbird-adult` |
+| Red Fox | `red-fox-juvenile` | `red-fox-adult` |
+| Roe Deer | `roe-deer-juvenile` | `roe-deer-adult` |
+| Common Frog | `common-frog-juvenile` | `common-frog-adult` |
+| Common Seal | `common-seal-juvenile` | `common-seal-adult` |
+| European Hedgehog | `european-hedgehog-juvenile` | `european-hedgehog-adult` |
+
+**Species without age variants (24 species):** Use `ageStage: 'adult'` and `speciesId === id` (no suffix). These are the remaining entries from the 38-entry species registry already written.
+
+**Gemini prompt amendment for age stage:**
+Add this clause to the Gemini prompt (§3.2) instructing it to identify age stage:
+
+```
+If the animal's age stage is clearly identifiable as juvenile (young, cub, kit, chick, fledgling,
+puppy, lamb), include an optional field:
+  "ageStage": "juvenile"
+Otherwise omit the field or set it to:
+  "ageStage": "adult"
+```
+
+**Registry lookup with age stage:**
+```typescript
+import { SPECIES_REGISTRY } from '../data/speciesRegistry';
+
+function lookupSpeciesEntry(
+  commonName: string,
+  ageStage: AgeStage = 'adult'
+): SpeciesEntry | null {
+  // Try exact age-variant match first
+  const exact = SPECIES_REGISTRY.find(
+    s => s.commonName.toLowerCase() === commonName.toLowerCase() &&
+         s.ageStage === ageStage
+  );
+  if (exact) return exact;
+
+  // Fall back to adult if no juvenile match
+  return SPECIES_REGISTRY.find(
+    s => s.commonName.toLowerCase() === commonName.toLowerCase() &&
+         s.ageStage === 'adult'
+  ) ?? null;
+}
+```
+
+**`age_stage` column in `public.animons`:**  
+Added by migration 002 — `TEXT NOT NULL DEFAULT 'adult' CHECK (age_stage IN ('juvenile', 'adult'))`.  
+The value comes from the Gemini response. Always populate it on insert:
+```typescript
+age_stage: geminiResult.ageStage ?? 'adult',
+```
+
+**Future evolution mechanic (Phase 2 note, not built in Phase 1):**
+A collected `european-robin-juvenile` can be evolved to `european-robin-adult` by spending in-game currency. The `speciesId` field links the two entries for this mechanic. No evolution UI is built in Phase 1 — but the data model is complete.
+
+---
+
+### 7.3 Gemini Mock Strategy (API Key Pending)
+
+**Decision:** Build the camera and all Gemini-dependent code using a **mock service** that swaps to the real API when the key is available. This unblocks all Phase 1 UI development.
+
+**Context:** The developer's Google Cloud project quota is full. A new project has been requested. Until approved, `EXPO_PUBLIC_GEMINI_API_KEY` is absent from `.env`.
+
+**Mock mode trigger:**
+```typescript
+const MOCK_MODE =
+  !process.env.EXPO_PUBLIC_GEMINI_API_KEY ||
+  process.env.EXPO_PUBLIC_GEMINI_API_KEY === 'mock';
+```
+
+**Mock response (used for all UI and integration dev):**
+The mock pretends to identify a European Robin adult — a species that exists in the registry, is visually familiar, and covers the most common happy-path test scenarios.
+
+```typescript
+const MOCK_GEMINI_RESPONSE: GeminiIdentifiedResult = {
+  identified: true,
+  isRealAnimal: true,
+  screenDetected: false,
+  commonName: 'European Robin',
+  ageStage: 'adult',
+  confidence: 0.94,
+};
+
+export async function analyseFrame(_base64Jpeg: string): Promise<GeminiResult> {
+  if (MOCK_MODE) {
+    // Simulate the ~1.5s network latency of the real API
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    return MOCK_GEMINI_RESPONSE;
+  }
+  // Real API call — see §3.2 for full implementation
+  return callRealGeminiApi(_base64Jpeg);
+}
+```
+
+**Mock variants to test other ACs:**
+Add a `MOCK_SCENARIO` env var for developer convenience:
+```
+EXPO_PUBLIC_MOCK_SCENARIO=screen_detected   → returns screenDetected: true result
+EXPO_PUBLIC_MOCK_SCENARIO=no_animal         → returns no_animal result  
+EXPO_PUBLIC_MOCK_SCENARIO=unknown_species   → returns commonName: 'Purple Wombat' (not in registry)
+EXPO_PUBLIC_MOCK_SCENARIO=juvenile          → returns European Robin, ageStage: 'juvenile'
+(default / absent)                          → returns European Robin adult as above
+```
+
+**Swap-to-real checklist when key arrives:**
+1. Set `EXPO_PUBLIC_GEMINI_API_KEY=<real_key>` in `.env`
+2. Confirm `MOCK_MODE` evaluates to `false` at runtime
+3. Test on a physical device with a real animal target (use a printed photo for initial dev)
+4. Monitor GCP quota dashboard — set a budget alert at £5/month
