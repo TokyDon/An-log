@@ -147,7 +147,7 @@ export default function AnilogScreen() {
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
             <View style={[{ width: CARD_WIDTH }, styles.cardWrapper]}>
-              <AnimonCard animon={item} onPress={handleCardPress} />
+              <AnimonCard animon={item} onPress={handleCardPress} showPhoto />
             </View>
           )}
         />
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   filterChip: {
-    borderRadius: 3,
+    borderRadius: 99,
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderWidth: 1,
@@ -251,8 +251,6 @@ const styles = StyleSheet.create({
     gap: COLUMN_GAP,
   },
   cardWrapper: {
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
     overflow: 'hidden',
   },
 });
