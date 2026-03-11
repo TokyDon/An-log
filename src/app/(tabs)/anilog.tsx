@@ -25,22 +25,21 @@ import { AnimonCard } from '../../components/ui/AnimonCard';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useCollection } from '../../features/collection/useCollection';
 import { useCollectionStore } from '../../store/collectionStore';
-import { ANIMON_TYPES, TYPE_DEFINITIONS } from '../../constants/typeSystem';
+import { ANIMON_TYPES, getTypeDefinition } from '../../constants/typeSystem';
 import type { Animon } from '../../types/animon';
-import type { AnimonType } from '../../types/animon';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const COLUMN_GAP = 12;
 const SIDE_PAD = 16;
 const CARD_WIDTH = (SCREEN_WIDTH - SIDE_PAD * 2 - COLUMN_GAP) / 2;
 
-type FilterOption = 'all' | AnimonType;
+type FilterOption = 'all' | string;
 
 const FILTER_OPTIONS: Array<{ key: FilterOption; label: string }> = [
   { key: 'all', label: 'ALL' },
   ...ANIMON_TYPES.map((t) => ({
     key: t as FilterOption,
-    label: TYPE_DEFINITIONS[t].label.toUpperCase(),
+    label: getTypeDefinition(t).label.toUpperCase(),
   })),
 ];
 
@@ -60,7 +59,7 @@ export default function AnilogScreen() {
     const base =
       activeFilter === 'all'
         ? animons
-        : animons.filter((a) => a.types.includes(activeFilter as AnimonType));
+        : animons.filter((a) => (a.types as string[]).includes(activeFilter));
     return [...base].sort(
       (a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime(),
     );
@@ -73,7 +72,7 @@ export default function AnilogScreen() {
   const activeFilterLabel =
     activeFilter === 'all'
       ? ''
-      : TYPE_DEFINITIONS[activeFilter as AnimonType]?.label ?? '';
+      : getTypeDefinition(activeFilter).label;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -81,7 +80,7 @@ export default function AnilogScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.wordmark}>ANÍLOG</Text>
-          <Text style={styles.screenTitle}>My Collection</Text>
+          <Text style={styles.screenTitle}>Everything you've found.</Text>
         </View>
         <View style={styles.specimenBadge}>
           <Text style={styles.specimenBadgeText}>{animons.length} LOGGED</Text>
@@ -97,8 +96,8 @@ export default function AnilogScreen() {
       >
         {FILTER_OPTIONS.map((opt) => {
           const isActive = activeFilter === opt.key;
-          const typeColor =
-            opt.key !== 'all' ? TYPE_DEFINITIONS[opt.key as AnimonType]?.color : undefined;
+          const typeDef = opt.key !== 'all' ? getTypeDefinition(opt.key) : undefined;
+          const typeColor = typeDef?.color;
           return (
             <TouchableOpacity
               key={opt.key}
@@ -114,7 +113,7 @@ export default function AnilogScreen() {
                 style={[
                   styles.filterChipText,
                   isActive
-                    ? { color: typeColor ? TYPE_DEFINITIONS[opt.key as AnimonType].textColor : colors.textInverse }
+                    ? { color: typeColor ? typeDef!.textColor : colors.textInverse }
                     : styles.filterChipTextInactive,
                 ]}
               >
@@ -183,7 +182,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   screenTitle: {
-    fontFamily: typography.fontFamily.bodyBold,
+    fontFamily: typography.fontFamily.heading,
     fontSize: typography.fontSize.xl,
     color: colors.text1,
     lineHeight: typography.fontSize.xl * typography.lineHeight.tight,

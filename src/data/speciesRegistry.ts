@@ -10,7 +10,6 @@
  * a single source of truth.
  */
 
-import type { AnimonTypeName } from '../constants/typeSystem';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,7 +25,8 @@ export interface SpeciesEntry {
   scientificName: string;
   ageStage: AgeStage;
   category: 'bird' | 'mammal' | 'insect' | 'reptile' | 'amphibian' | 'marine';
-  types: [AnimonTypeName] | [AnimonTypeName, AnimonTypeName];
+  /** Biological taxonomy types — one per entry (multi-type reserved for future) */
+  types: [string] | [string, string];
   rarity: AnimonRarity;
   /** ~30 words, naturalist field-guide tone */
   flavourText: string;
@@ -55,7 +55,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Erithacus rubecula',
     ageStage: 'adult',
     category: 'bird',
-    types: ['fire'],
+    types: ['bird'],
     rarity: 'common',
     flavourText:
       "Britain's unofficial national bird. Ruthlessly territorial, its vivid orange-red breast is a warning to rivals as much as a charm to gardeners.",
@@ -76,7 +76,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Erithacus rubecula',
     ageStage: 'juvenile',
     category: 'bird',
-    types: ['fire', 'ground'],
+    types: ['bird'],
     rarity: 'uncommon',
     flavourText:
       'Without its famous blush, the young robin hides in plain sight among leaf litter. Spotted buff plumage is its camouflage while it earns the right to colour.',
@@ -99,7 +99,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Turdus merula',
     ageStage: 'adult',
     category: 'bird',
-    types: ['ground'],
+    types: ['bird'],
     rarity: 'common',
     flavourText:
       'Male jet-black with a vivid amber-yellow bill; females are brown and easily overlooked. A master songster, its evening fluting is the soundtrack of British gardens.',
@@ -120,7 +120,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Turdus merula',
     ageStage: 'juvenile',
     category: 'bird',
-    types: ['ground', 'rock'],
+    types: ['bird'],
     rarity: 'uncommon',
     flavourText:
       'Heavily streaked and speckled in rufous-brown, the young blackbird looks more thrush than blackbird. Its dark bill and scaly back betray an identity still in formation.',
@@ -143,7 +143,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Vulpes vulpes',
     ageStage: 'adult',
     category: 'mammal',
-    types: ['fire', 'ground'],
+    types: ['mammal'],
     rarity: 'uncommon',
     flavourText:
       'Supremely adaptable, the red fox thrives from moorland to city street. Amber-eyed and rust-furred, it is as much cunning survivor as it is wild spectacle.',
@@ -164,7 +164,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Vulpes vulpes',
     ageStage: 'juvenile',
     category: 'mammal',
-    types: ['fire'],
+    types: ['mammal'],
     rarity: 'uncommon',
     flavourText:
       'Born blind and chocolate-brown, the fox kit grows into its rust coat over weeks of tumbling, play-fighting, and cautious exploration around the den entrance.',
@@ -187,7 +187,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Capreolus capreolus',
     ageStage: 'adult',
     category: 'mammal',
-    types: ['grass'],
+    types: ['mammal'],
     rarity: 'uncommon',
     flavourText:
       "Britain's most widespread native deer. Secretive and solitary, it favours woodland edges at dawn. The male's short, rough-pearled antlers hint at ancient forest lineage.",
@@ -208,7 +208,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Capreolus capreolus',
     ageStage: 'juvenile',
     category: 'mammal',
-    types: ['grass', 'light'],
+    types: ['mammal'],
     rarity: 'uncommon',
     flavourText:
       'Dappled with white spots that dissolve into woodland light, the roe fawn is designed to disappear. Laid hidden in long grass while its mother feeds nearby.',
@@ -231,7 +231,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Rana temporaria',
     ageStage: 'adult',
     category: 'amphibian',
-    types: ['water', 'grass'],
+    types: ['amphibian'],
     rarity: 'uncommon',
     flavourText:
       'Variable in colour from olive to brick-red, the common frog is the heartbeat of the British garden pond. A voracious hunter of slugs; the gardener\'s quiet ally.',
@@ -252,7 +252,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Rana temporaria',
     ageStage: 'juvenile',
     category: 'amphibian',
-    types: ['water'],
+    types: ['amphibian'],
     rarity: 'common',
     flavourText:
       'A comma of life in shallow water. Remarkable for carrying gills, a tail, and the blueprint for an entirely different creature within a single small body.',
@@ -275,7 +275,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Phoca vitulina',
     ageStage: 'adult',
     category: 'marine',
-    types: ['water', 'ice'],
+    types: ['fish'],
     rarity: 'uncommon',
     flavourText:
       'The dog-faced seal of British coasts. Rounded head and concave profile distinguish it from the grey seal. Hauls out on sandbanks at low tide, watching the world with liquid eyes.',
@@ -296,7 +296,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Phoca vitulina',
     ageStage: 'juvenile',
     category: 'marine',
-    types: ['ice', 'light'],
+    types: ['fish'],
     rarity: 'uncommon',
     flavourText:
       'Born during low tide on exposed sandbanks, the pup can swim within hours. Its pale coat and vast dark eyes give it an almost luminous, otherworldly quality on the shore.',
@@ -319,7 +319,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Erinaceus europaeus',
     ageStage: 'adult',
     category: 'mammal',
-    types: ['steel'],
+    types: ['mammal'],
     rarity: 'uncommon',
     flavourText:
       'Armoured in roughly 6,000 hollow spines, the hedgehog navigates gardens by scent, hoovering up beetles and worms. Its spines are modified hairs, not quills, and cannot be fired.',
@@ -340,7 +340,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Erinaceus europaeus',
     ageStage: 'juvenile',
     category: 'mammal',
-    types: ['steel', 'light'],
+    types: ['mammal'],
     rarity: 'uncommon',
     flavourText:
       'Hoglets are born blind beneath a membrane that sheathes their first soft spines. As they dry and harden, a second set grows through — the first glimpse of the armour to come.',
@@ -364,7 +364,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Cyanistes caeruleus',
     ageStage: 'adult',
     category: 'bird',
-    types: ['electric'],
+    types: ['bird'],
     rarity: 'common',
     flavourText:
       'A jewel of the garden feeder. The combination of cobalt cap, lemon belly, and white cheek patches makes the blue tit one of the most instantly recognised birds in Britain.',
@@ -386,7 +386,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Parus major',
     ageStage: 'adult',
     category: 'bird',
-    types: ['electric', 'ground'],
+    types: ['bird'],
     rarity: 'common',
     flavourText:
       'The largest British tit and one of its most adaptable. The bold black stripe bisecting its yellow breast signals status: the broader the stripe on a male, the more dominant the bird.',
@@ -408,7 +408,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Passer domesticus',
     ageStage: 'adult',
     category: 'bird',
-    types: ['ground'],
+    types: ['bird'],
     rarity: 'common',
     flavourText:
       'Ubiquitous for centuries, the house sparrow has quietly declined by over 60% in the UK since the 1970s. Its cheerful chirping still soundtracks urban Britain — for now.',
@@ -430,7 +430,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Columba palumbus',
     ageStage: 'adult',
     category: 'bird',
-    types: ['rock'],
+    types: ['bird'],
     rarity: 'common',
     flavourText:
       'Britain\'s largest and most common pigeon. The white neck patch and wine-flushed breast are unmistakable. Walks with deliberate gravity across lawns as though conducting an inspection.',
@@ -452,7 +452,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Pica pica',
     ageStage: 'adult',
     category: 'bird',
-    types: ['steel'],
+    types: ['bird'],
     rarity: 'common',
     flavourText:
       'Iridescent green and purple gloss on black wings and a tail that accounts for half its length. Highly intelligent, magpies store food, recognise their own reflection, and mourn their dead.',
@@ -474,7 +474,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Corvus corone',
     ageStage: 'adult',
     category: 'bird',
-    types: ['psychic'],
+    types: ['bird'],
     rarity: 'common',
     flavourText:
       'All-black and disconcertingly intelligent. Crows use tools, solve puzzles, recognise human faces, and hold apparent grudges. It is difficult not to feel observed when one watches you.',
@@ -496,7 +496,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Milvus milvus',
     ageStage: 'adult',
     category: 'bird',
-    types: ['dragon'],
+    types: ['bird'],
     rarity: 'rare',
     flavourText:
       'Rescued from extinction in Britain by a landmark reintroduction programme. Its russet-orange tail, forked in flight, is unmistakable — a living symbol of conservation success.',
@@ -518,7 +518,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Tyto alba',
     ageStage: 'adult',
     category: 'bird',
-    types: ['psychic', 'ice'],
+    types: ['bird'],
     rarity: 'rare',
     flavourText:
       'Ghost-white and utterly silent in flight, the barn owl hunts by sound alone. Its heart-shaped facial disc funnels the rustle of a vole heard beneath twelve inches of snow.',
@@ -540,7 +540,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Alcedo atthis',
     ageStage: 'adult',
     category: 'bird',
-    types: ['water', 'steel'],
+    types: ['bird'],
     rarity: 'rare',
     flavourText:
       'An electric-blue arrow along clean rivers. The kingfisher\'s plumage is structural colour — no pigment, just microscopic crystal lattices that shatter light into impossible turquoise.',
@@ -562,7 +562,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Fratercula arctica',
     ageStage: 'adult',
     category: 'bird',
-    types: ['water', 'ice'],
+    types: ['bird'],
     rarity: 'uncommon',
     flavourText:
       'The sea parrot of northern coasts. That striped, waxy bill is a summer accessory — shed in winter for a duller version. Each colourful plate signals breeding condition to watchful eyes.',
@@ -584,7 +584,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Dendrocopos major',
     ageStage: 'adult',
     category: 'bird',
-    types: ['steel', 'rock'],
+    types: ['bird'],
     rarity: 'uncommon',
     flavourText:
       'Each drum-roll resonates at up to 20 strikes per second — the bill a precision chisel backed by a shock-absorbing skull. Its crimson under-tail is a flash of colour in winter woodland.',
@@ -608,7 +608,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Sciurus carolinensis',
     ageStage: 'adult',
     category: 'mammal',
-    types: ['grass'],
+    types: ['mammal'],
     rarity: 'common',
     flavourText:
       'Introduced from North America in the 1870s, the grey squirrel has outcompeted its red cousin across most of England and Wales. Acrobatic, bold, and improbably good with a problem to solve.',
@@ -630,7 +630,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Sciurus vulgaris',
     ageStage: 'adult',
     category: 'mammal',
-    types: ['fire', 'grass'],
+    types: ['mammal'],
     rarity: 'rare',
     flavourText:
       'Native to Britain and increasingly scarce, the red squirrel clings on in Scotland, Northumberland, and the Isle of Wight. Its ear tufts and slimmer frame distinguish it at a glance.',
@@ -652,7 +652,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Lepus europaeus',
     ageStage: 'adult',
     category: 'mammal',
-    types: ['electric'],
+    types: ['mammal'],
     rarity: 'uncommon',
     flavourText:
       'Built entirely for speed across open farmland, the brown hare can reach 45 mph in short bursts. In March, does box competing males in their famous, frenzied courtship displays.',
@@ -674,7 +674,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Oryctolagus cuniculus',
     ageStage: 'adult',
     category: 'mammal',
-    types: ['grass'],
+    types: ['mammal'],
     rarity: 'common',
     flavourText:
       'The rabbit engineered the chalk downland and shaped British countryside for centuries. Compact, cautious, and exquisitely alert, it anchors entire predator food webs.',
@@ -696,7 +696,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Meles meles',
     ageStage: 'adult',
     category: 'mammal',
-    types: ['ground', 'steel'],
+    types: ['mammal'],
     rarity: 'rare',
     flavourText:
       'Britain\'s largest land carnivore. The badger\'s powerful forearms can outdig any rival predator. Nocturnal, secretive, and deceptively swift for a 12-kilogram animal.',
@@ -718,7 +718,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Ardea cinerea',
     ageStage: 'adult',
     category: 'bird',
-    types: ['water', 'psychic'],
+    types: ['bird'],
     rarity: 'uncommon',
     flavourText:
       'Patience made visible. The grey heron can stand motionless at a river margin for an hour before the lightning strike of its dagger bill. Among the most ancient-looking of British birds.',
@@ -742,7 +742,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Sympetrum striolatum',
     ageStage: 'adult',
     category: 'insect',
-    types: ['bug', 'water'],
+    types: ['insect'],
     rarity: 'uncommon',
     flavourText:
       'The most commonly seen dragonfly in Britain, darting between perches over still water. Its four wings beat independently, allowing hovering, backward flight, and turns of improbable precision.',
@@ -764,7 +764,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Vanessa atalanta',
     ageStage: 'adult',
     category: 'insect',
-    types: ['bug', 'fire'],
+    types: ['insect'],
     rarity: 'common',
     flavourText:
       'Velvet-black wings banded in vivid scarlet and edged with white dots: the red admiral needs no camouflage. A strong migrant that arrives from Europe each spring, topping up resident populations.',
@@ -786,7 +786,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Bombus terrestris',
     ageStage: 'adult',
     category: 'insect',
-    types: ['bug', 'electric'],
+    types: ['insect'],
     rarity: 'common',
     flavourText:
       'The lardy aerial tanker of the pollinator world. Queens emerge in February before most flowers are open, sustaining themselves on memory. The most widespread bumblebee in Britain.',
@@ -808,7 +808,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Lucanus cervus',
     ageStage: 'adult',
     category: 'insect',
-    types: ['bug', 'steel'],
+    types: ['insect'],
     rarity: 'rare',
     flavourText:
       "Britain's largest beetle and one of its most spectacular. The male's antler-like mandibles are for jousting with rivals, not feeding. Larvae spend up to seven years underground inside rotting oak.",
@@ -832,7 +832,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Anguis fragilis',
     ageStage: 'adult',
     category: 'reptile',
-    types: ['ground'],
+    types: ['reptile'],
     rarity: 'uncommon',
     flavourText:
       'Neither worm nor snake — the slow worm is a legless lizard that can live for 50 years. Its smooth, coppery scales and blinking eyes distinguish it from every true snake in Britain.',
@@ -854,7 +854,7 @@ export const SPECIES_REGISTRY: SpeciesEntry[] = [
     scientificName: 'Zootoca vivipara',
     ageStage: 'adult',
     category: 'reptile',
-    types: ['ground', 'fire'],
+    types: ['reptile'],
     rarity: 'uncommon',
     flavourText:
       'Britain\'s most widespread reptile, gives birth to live young rather than laying eggs — an adaptation to its cool, northern climate. Basks openly on heathland in sunshine, vanishing at first shadow.',

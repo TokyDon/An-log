@@ -81,7 +81,8 @@ export function RarityBadge({ rarity }: RarityBadgeProps) {
     };
   });
 
-  const rarityColor = colors.rarity[rarity];
+  const rarityDef = colors.rarity[rarity];
+  const rarityColor = rarityDef.bg;
   const bgColor = hexToRgba(rarityColor, 0.12);
 
   return (

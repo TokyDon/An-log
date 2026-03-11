@@ -41,6 +41,7 @@ export const colors = {
   // ── Device chrome ───────────────────────────────────────────────────────────
   navDark:     '#F0EBE0',   // tab bar — Card Cream
   surfaceDark: '#1A1A2E',   // intentionally dark — hero zones, camera bg
+  bezel:       '#2D2D4A',   // avatar inner ring — slightly lighter than surfaceDark
 
   // ── Rarity ──────────────────────────────────────────────────────────────────
   rarity: {

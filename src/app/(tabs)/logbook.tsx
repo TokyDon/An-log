@@ -22,9 +22,9 @@ const TOTAL_SPECIES_TARGET = 100;
 const TIER_COLORS: Record<string, string> = {
   Bronze:   colors.text3,
   Silver:   colors.text2,
-  Gold:     colors.rarity.uncommon,
+  Gold:     colors.rarity.uncommon.bg,
   Platinum: '#E5E4E2',
-  Diamond:  colors.rarity.rare,
+  Diamond:  colors.rarity.rare.bg,
 };
 
 function SectionRule({ label }: { label: string }) {
@@ -92,7 +92,7 @@ export default function MilestonesScreen() {
         <View style={styles.header}>
           <View>
             <Text style={styles.wordmark}>ANÍLOG</Text>
-            <Text style={styles.screenTitle}>Stamps</Text>
+            <Text style={styles.screenTitle}>Milestones.</Text>
           </View>
           <View style={styles.specimenBadge}>
             <Text style={styles.specimenBadgeText}>
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   screenTitle: {
-    fontFamily: typography.fontFamily.bodyBold,
+    fontFamily: typography.fontFamily.heading,
     fontSize: typography.fontSize.xl,
     color: colors.text1,
     lineHeight: typography.fontSize.xl * typography.lineHeight.tight,
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
   },
   rarityCount: {
     fontFamily: typography.fontFamily.bodyBold,
-    fontSize: typography.fontSize['4xl'],
+    fontSize: typography.fontSize['3xl'],
     color: colors.text1,
     marginTop: 8,
   },

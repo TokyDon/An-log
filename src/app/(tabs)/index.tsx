@@ -21,7 +21,7 @@ import { colors } from '../../constants/colors';
 import { typography } from '../../constants/typography';
 import { usePartyStore, PARTY_SIZE } from '../../store/partyStore';
 import { TypeTagChip } from '../../components/ui/TypeTagChip';
-import { TYPE_DEFINITIONS } from '../../constants/typeSystem';
+import { getTypeDefinition } from '../../constants/typeSystem';
 import type { PartySlot } from '../../types/party';
 
 const CARD_PHOTO_SIZE = 72;
@@ -41,7 +41,7 @@ function EmptyCard({ slotIndex }: { slotIndex: number }) {
       </View>
       <View style={styles.cardInfo}>
         <Text style={styles.emptySlotLabel}>SLOT {slotIndex + 1}</Text>
-        <Text style={styles.emptySlotSub}>Empty — catch an Anímon to fill</Text>
+        <Text style={styles.emptySlotSub}>No companion here yet.</Text>
       </View>
     </View>
   );
@@ -53,7 +53,7 @@ function PartyCard({ slot, slotIndex }: PartyCardProps) {
   }
 
   const { animon } = slot;
-  const def = TYPE_DEFINITIONS[animon.types[0]];
+  const def = getTypeDefinition(animon.types[0]);
   const typeColor = def.color;
   const textColor = def.textColor;
   const textAlpha65 = textColor === '#FFFFFF' ? 'rgba(255,255,255,0.65)' : 'rgba(15,23,42,0.65)';
@@ -108,7 +108,7 @@ export default function PartyScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.wordmark}>ANÍLOG</Text>
-          <Text style={styles.screenTitle}>Your Party</Text>
+          <Text style={styles.screenTitle}>Your companions.</Text>
         </View>
         <View style={styles.partyBadge}>
           <Text style={styles.partyBadgeText}>{filled}/{PARTY_SIZE}</Text>
@@ -127,7 +127,7 @@ export default function PartyScreen() {
         {filled < PARTY_SIZE && (
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              The world is out there. Go scan to grow your party.
+              Your party is quiet. Head out and find your next companion.
             </Text>
           </View>
         )}
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   screenTitle: {
-    fontFamily: typography.fontFamily.bodyBold,
+    fontFamily: typography.fontFamily.heading,
     fontSize: typography.fontSize.xl,
     color: colors.text1,
     lineHeight: typography.fontSize.xl * typography.lineHeight.tight,

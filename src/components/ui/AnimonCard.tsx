@@ -15,12 +15,11 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { colors } from '../../constants/colors';
-import { TYPE_DEFINITIONS } from '../../constants/typeSystem';
+import { getTypeDefinition } from '../../constants/typeSystem';
 import { typography } from '../../constants/typography';
 import { TypeTagChip } from './TypeTagChip';
 import { RarityBadge } from './RarityBadge';
 import type { Animon } from '../../types/animon';
-import type { AnimonType } from '../../types/animon';
 
 interface AnimonCardProps {
   animon: Animon;
@@ -36,19 +35,19 @@ function accessionNumber(id: string): string {
   return `#-${id.slice(-3).padStart(3, '0')}`;
 }
 
-/** Placeholder emoji per type for AI art area */
-function getTypeEmoji(primaryType: AnimonType): string {
-  const map: Record<AnimonType, string> = {
-    fire: '🔥', water: '💧', grass: '🌿', electric: '⚡',
-    ice: '❄️', dragon: '🐉', psychic: '🔮', bug: '🐛',
-    steel: '⚙️', ground: '🏔️', rock: '🪨', light: '✨',
+/** Placeholder emoji per biological type for AI art area */
+function getTypeEmoji(primaryType: string): string {
+  const map: Record<string, string> = {
+    mammal: '🦊', bird: '🐦', reptile: '🦎', insect: '🐛',
+    fish: '🐟', amphibian: '🐸', dog: '🐕', cat: '🐈',
+    wild: '🌿', domestic: '🏡',
   };
   return map[primaryType] ?? '◈';
 }
 
 export function AnimonCard({ animon, onPress, compact = false, showPhoto = true }: AnimonCardProps) {
   const primaryType = animon.types[0];
-  const def = TYPE_DEFINITIONS[primaryType];
+  const def = getTypeDefinition(primaryType);
   const typeColor = def.color;
   const textColor = def.textColor;
   const textAlpha65 = textColor === '#FFFFFF' ? 'rgba(255,255,255,0.65)' : 'rgba(15,23,42,0.65)';
@@ -188,9 +187,9 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   footerName: {
-    fontFamily: typography.fontFamily.bodyBold,
-    fontSize: typography.fontSize.md,
-    lineHeight: typography.fontSize.md * typography.lineHeight.label,
+    fontFamily: typography.fontFamily.heading,
+    fontSize: typography.fontSize.lg,
+    lineHeight: typography.fontSize.lg * typography.lineHeight.label,
   },
   footerSpecies: {
     fontFamily: typography.fontFamily.body,
@@ -245,9 +244,9 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   compactName: {
-    fontFamily: typography.fontFamily.bodyBold,
-    fontSize: typography.fontSize.sm,
-    lineHeight: typography.fontSize.sm * typography.lineHeight.label,
+    fontFamily: typography.fontFamily.heading,
+    fontSize: typography.fontSize.base,
+    lineHeight: typography.fontSize.base * typography.lineHeight.label,
   },
   compactChips: {
     flexDirection: 'row',

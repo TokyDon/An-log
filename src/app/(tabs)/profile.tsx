@@ -148,7 +148,7 @@ export default function ProfileScreen() {
                     styles.raritySegment,
                     {
                       flex: seg.count / totalForBar,
-                      backgroundColor: colors.rarity[seg.rarity],
+                      backgroundColor: colors.rarity[seg.rarity].bg,
                     },
                   ]}
                 />
@@ -163,7 +163,7 @@ export default function ProfileScreen() {
                 <View
                   style={[
                     styles.rarityDot,
-                    { backgroundColor: colors.rarity[seg.rarity] },
+                    { backgroundColor: colors.rarity[seg.rarity].bg },
                   ]}
                 />
                 <Text style={styles.rarityLegendText}>
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
     color: colors.accent,
   },
   username: {
-    fontFamily: typography.fontFamily.bodyExtra,
+    fontFamily: typography.fontFamily.heading,
     fontSize: typography.fontSize['2xl'],
     color: colors.textInverse,
   },

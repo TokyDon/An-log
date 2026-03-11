@@ -149,11 +149,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   heroHeadline: {
-    fontFamily: typography.fontFamily.bodyExtra,
-    fontSize: typography.fontSize['4xl'],
+    fontFamily: typography.fontFamily.heading,
+    fontSize: typography.fontSize['3xl'],
     color: colors.textInverse,
     textAlign: 'center',
-    lineHeight: typography.fontSize['4xl'] * 1.05,
+    lineHeight: typography.fontSize['3xl'] * 1.05,
     letterSpacing: typography.letterSpacing.squeezed,
   },
   tagline: {

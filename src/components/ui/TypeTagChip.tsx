@@ -7,19 +7,17 @@
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { TYPE_DEFINITIONS } from '../../constants/typeSystem';
+import { getTypeDefinition } from '../../constants/typeSystem';
 import { typography } from '../../constants/typography';
-import type { AnimonType } from '../../types/animon';
 
 interface TypeTagChipProps {
-  type: AnimonType;
+  type: string;
   size?: 'sm' | 'md';
   onCard?: boolean;
 }
 
 export function TypeTagChip({ type, size = 'md', onCard = false }: TypeTagChipProps) {
-  const def = TYPE_DEFINITIONS[type];
-  if (!def) return null;
+  const def = getTypeDefinition(type);
 
   const isLightType = def.textColor !== '#FFFFFF';
   const chipBg = onCard

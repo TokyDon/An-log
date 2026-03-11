@@ -2,7 +2,7 @@
  * Anilog Root Layout
  *
  * Sets up fonts, React Query provider, and root navigation.
- * v3: Plus Jakarta Sans replaces Playfair Display + DM Sans.
+ * v4: DM Serif Display + DM Sans — Naturalist edition.
  */
 
 import { useEffect } from 'react';
@@ -14,16 +14,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { supabase } from '../services/supabase/client';
 import {
   useFonts,
-  PlusJakartaSans_400Regular,
-  PlusJakartaSans_500Medium,
-  PlusJakartaSans_600SemiBold,
-  PlusJakartaSans_700Bold,
-  PlusJakartaSans_800ExtraBold,
-} from '@expo-google-fonts/plus-jakarta-sans';
+  DMSerifDisplay_400Regular,
+} from '@expo-google-fonts/dm-serif-display';
 import {
-  SpaceMono_400Regular,
-  SpaceMono_700Bold,
-} from '@expo-google-fonts/space-mono';
+  DMSans_400Regular,
+  DMSans_500Medium,
+  DMSans_700Bold,
+} from '@expo-google-fonts/dm-sans';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import '../../global.css';
@@ -41,13 +38,10 @@ const queryClient = new QueryClient({
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    PlusJakartaSans_400Regular,
-    PlusJakartaSans_500Medium,
-    PlusJakartaSans_600SemiBold,
-    PlusJakartaSans_700Bold,
-    PlusJakartaSans_800ExtraBold,
-    SpaceMono_400Regular,
-    SpaceMono_700Bold,
+    DMSerifDisplay_400Regular,
+    DMSans_400Regular,
+    DMSans_500Medium,
+    DMSans_700Bold,
   });
 
   useEffect(() => {
@@ -79,7 +73,7 @@ export default function RootLayout() {
     return () => subscription.unsubscribe();
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) return <View style={{ flex: 1, backgroundColor: '#FAFAF5' }} />;
+  if (!fontsLoaded) return <View style={{ flex: 1, backgroundColor: '#FDFAF5' }} />;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
