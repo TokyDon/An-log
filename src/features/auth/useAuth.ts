@@ -23,6 +23,7 @@ export function useAuth() {
           avatarUrl: null,
           bio: null,
           createdAt: session.user.created_at,
+          emailConfirmed: session.user.email_confirmed_at !== null,
         });
       } else {
         setLoading(false);
@@ -40,6 +41,7 @@ export function useAuth() {
             avatarUrl: null,
             bio: null,
             createdAt: session.user.created_at,
+            emailConfirmed: session.user.email_confirmed_at !== null,
           });
         } else {
           signOut();
