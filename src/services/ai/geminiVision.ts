@@ -1,93 +1,127 @@
 /**
- * Anílog AI Identification Service — Gemini Vision
+ * Anílog AI Identification Service — Gemini Vision (Phase 1)
  *
- * Uses Google Gemini Vision API to identify animals from live camera captures.
- * Returns a structured AiIdentificationResult. If confidence < 0.7, the top-3
- * alternative candidates are returned so the user can manually disambiguate.
+ * Identifies animals from base64-encoded JPEG frames.
+ * Returns a GeminiResult discriminated union — callers must check `identified`.
  *
- * IMPORTANT: This module is the AI abstraction layer.
- * If we ever switch from Gemini to another provider (e.g. GPT-4V, Claude),
- * only this file and its types need to change — all callers remain unaffected.
- *
- * API Reference: https://ai.google.dev/api/generate-content
+ * MOCK MODE: When EXPO_PUBLIC_GEMINI_API_KEY is absent or set to 'mock',
+ * analyseFrame returns a pre-seeded mock response (no network call).
+ * Set EXPO_PUBLIC_MOCK_SCENARIO to test other ACs:
+ *   screen_detected | no_animal | unknown_species | juvenile
  */
 
-import type { AiIdentificationResult } from './types';
-import type { AnimonType } from '../../types/animon';
+import type {
+  GeminiResult,
+  GeminiIdentifiedResult,
+  GeminiFailedResult,
+  AgeStage,
+} from '../../types/animon';
+
+// ─── Mock mode ────────────────────────────────────────────────────────────────
+
+const MOCK_MODE =
+  !process.env.EXPO_PUBLIC_GEMINI_API_KEY ||
+  process.env.EXPO_PUBLIC_GEMINI_API_KEY === 'mock';
+
+const MOCK_SCENARIO = process.env.EXPO_PUBLIC_MOCK_SCENARIO ?? '';
+
+const MOCK_SCREEN_DETECTED: GeminiFailedResult = {
+  identified: false, isRealAnimal: false, screenDetected: true, reason: 'screen_detected',
+};
+const MOCK_NO_ANIMAL: GeminiFailedResult = {
+  identified: false, isRealAnimal: true, screenDetected: false, reason: 'no_animal',
+};
+const MOCK_UNKNOWN: GeminiIdentifiedResult = {
+  identified: true, isRealAnimal: true, screenDetected: false,
+  commonName: 'Purple Wombat', ageStage: 'adult', confidence: 0.85,
+};
+const MOCK_JUVENILE: GeminiIdentifiedResult = {
+  identified: true, isRealAnimal: true, screenDetected: false,
+  commonName: 'European Robin', ageStage: 'juvenile', confidence: 0.91,
+};
+const MOCK_DEFAULT: GeminiIdentifiedResult = {
+  identified: true, isRealAnimal: true, screenDetected: false,
+  commonName: 'European Robin', ageStage: 'adult', confidence: 0.94,
+};
+
+const MOCK_RESPONSES: Record<string, GeminiResult> = {
+  screen_detected: MOCK_SCREEN_DETECTED,
+  no_animal:       MOCK_NO_ANIMAL,
+  unknown_species: MOCK_UNKNOWN,
+  juvenile:        MOCK_JUVENILE,
+};
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
-const MODEL = 'gemini-pro-vision';
-
-// TODO: Move to environment variable — NEVER commit real API key to git
-const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY ?? '';
-
-const CONFIDENCE_THRESHOLD = 0.7;
+const MODEL = 'gemini-1.5-flash';
 
 // ─── Prompt ───────────────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `
-You are an expert wildlife and animal identification system for a mobile app called Anílog.
+const GEMINI_PROMPT = `You are an animal identification system for a wildlife app.
 
-Given an image of an animal, respond ONLY with valid JSON matching this schema:
+Analyse the image and respond with ONLY a JSON object — no markdown, no explanation, no extra text.
+
+FIRST check: Is this image showing a real live animal directly in front of a camera, or is it showing a photo/screen/image/painting OF an animal?
+- If it appears to be a photo of a photo, a screen, a book, or any non-live capture, set screenDetected: true.
+- A live animal in natural or domestic settings is screenDetected: false.
+
+If a real live animal is present and identified with confidence >= 0.70:
+- If the animal's age stage is clearly juvenile (young, cub, kit, chick, fledgling, puppy, lamb) set ageStage: "juvenile". Otherwise set ageStage: "adult".
 {
-  "species": "string (common name)",
-  "breed": "string | null (specific breed if identifiable, else null)",
-  "colour": "string (primary colour description)",
-  "gender": "male | female | unknown",
-  "isGlossy": boolean (true if the animal has unusually iridescent/rare markings),
-  "confidenceScore": number (0-1, your confidence in the primary identification),
-  "suggestedTypes": string[] (from: mammal, bird, reptile, insect, fish, amphibian, dog_breed, cat_breed, wild, domestic),
-  "alternativeCandidates": [
-    { "species": "string", "confidence": number }
-  ] (only include top 3 alternatives if confidenceScore < 0.7)
+  "identified": true,
+  "isRealAnimal": true,
+  "screenDetected": false,
+  "commonName": "<common name in English, e.g. European Robin>",
+  "ageStage": "adult",
+  "confidence": <0.0–1.0>
 }
 
-Rules:
-- If the image does not contain an animal, set confidenceScore to 0 and species to "unknown"
-- Never invent species — use "unknown" if unsure
-- isGlossy should be true for albino, melanistic, or visually extraordinary individuals
-- Keep species names in English
-`.trim();
+If a screen or photo-of-photo is detected:
+{
+  "identified": false,
+  "isRealAnimal": false,
+  "screenDetected": true,
+  "reason": "screen_detected"
+}
 
-// ─── Main Export ──────────────────────────────────────────────────────────────
+If no animal is visible or confidence < 0.70:
+{
+  "identified": false,
+  "isRealAnimal": true,
+  "screenDetected": false,
+  "reason": "no_animal"
+}
+
+Respond ONLY with the JSON object. No other text.`.trim();
+
+// ─── Main export ──────────────────────────────────────────────────────────────
 
 /**
- * Identify an animal from a base64-encoded image using Gemini Vision API.
+ * Analyse a base64-encoded JPEG frame and return a structured identification result.
  *
- * @param base64Image - Base64-encoded image data (no data URL prefix)
- * @param mimeType - Image MIME type (default: image/jpeg)
- * @returns Structured identification result
- * @throws Error if the API call fails or returns unparseable data
+ * In mock mode (no API key or key === 'mock'), returns a pre-seeded result
+ * after a simulated 1.5s delay. Set EXPO_PUBLIC_MOCK_SCENARIO to test edge cases.
  */
-export async function identifyAnimal(
-  base64Image: string,
-  mimeType: 'image/jpeg' | 'image/png' = 'image/jpeg',
-): Promise<AiIdentificationResult> {
-  if (!GEMINI_API_KEY) {
-    throw new Error('EXPO_PUBLIC_GEMINI_API_KEY is not set');
+export async function analyseFrame(base64Jpeg: string): Promise<GeminiResult> {
+  if (MOCK_MODE) {
+    await new Promise<void>((resolve) => setTimeout(resolve, 1500));
+    return MOCK_RESPONSES[MOCK_SCENARIO] ?? MOCK_DEFAULT;
   }
 
-  const endpoint = `${GEMINI_API_BASE}/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+  const key = process.env.EXPO_PUBLIC_GEMINI_API_KEY!;
+  const endpoint = `${GEMINI_API_BASE}/models/${MODEL}:generateContent?key=${key}`;
 
   const body = {
-    contents: [
-      {
-        parts: [
-          { text: SYSTEM_PROMPT },
-          {
-            inlineData: {
-              mimeType,
-              data: base64Image,
-            },
-          },
-        ],
-      },
-    ],
+    contents: [{
+      parts: [
+        { text: GEMINI_PROMPT },
+        { inlineData: { mimeType: 'image/jpeg', data: base64Jpeg } },
+      ],
+    }],
     generationConfig: {
-      temperature: 0.1, // deterministic identification
-      maxOutputTokens: 512,
+      temperature: 0.1,
+      maxOutputTokens: 256,
     },
   };
 
@@ -103,30 +137,12 @@ export async function identifyAnimal(
   }
 
   const data = await response.json();
-  const text: string =
-    data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+  const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 
   try {
-    const result = JSON.parse(text) as AiIdentificationResult;
-    // Sanitise: strip alternativeCandidates if confidence is high enough
-    if (result.confidenceScore >= CONFIDENCE_THRESHOLD) {
-      result.alternativeCandidates = undefined;
-    }
-    return result;
+    return JSON.parse(text) as GeminiResult;
   } catch {
-    throw new Error(`Failed to parse Gemini response: ${text}`);
+    // Treat parse failures as no_animal — never throw to the user
+    return MOCK_NO_ANIMAL;
   }
-}
-
-/**
- * Determine rarity from AI result.
- * Glossy beats all — isGlossy flag from Gemini drives this.
- */
-export function deriveRarity(
-  result: AiIdentificationResult,
-): 'common' | 'uncommon' | 'rare' | 'glossy' {
-  if (result.isGlossy) return 'glossy';
-  if (result.confidenceScore >= 0.95) return 'rare';
-  if (result.confidenceScore >= 0.8) return 'uncommon';
-  return 'common';
 }

@@ -1,12 +1,9 @@
 /**
- * Discover Tab — Field Naturalist Edition v2
+ * Party Tab — Your chosen Anímons
  *
- * Field Log landing screen:
- * - forestFloor dark header with ANÍLOG wordmark (Space Mono amberGlow)
- * - Stat chips: symbol + value (bold) + label (muted mono) — three separate elements
- * - Section rules: mono label + extending inkRule line
- * - Activity panel: parchment bg, 2px left-border accent, Playfair italic message
- * - Recent specimens: horizontal compact-card carousel
+ * Shows the trainer's 6-slot party.
+ * Occupied slots display: photo thumbnail, nickname, species, level badge.
+ * Empty slots display a dashed "+" invite.
  */
 
 import React from 'react';
@@ -15,40 +12,95 @@ import {
   Text,
   ScrollView,
   StyleSheet,
+  Image,
   Pressable,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { colors } from '../../constants/colors';
 import { typography } from '../../constants/typography';
-import { AnimonCard } from '../../components/ui/AnimonCard';
-import { MOCK_ANIMONS, MOCK_RECENT, NEARBY_ACTIVITY, MOCK_USER } from '../../data/mockAnimons';
-import type { Animon } from '../../types/animon';
-import type { AnimonRarity } from '../../types/animon';
+import { usePartyStore, PARTY_SIZE } from '../../store/partyStore';
+import { TypeTagChip } from '../../components/ui/TypeTagChip';
+import { TYPE_DEFINITIONS } from '../../constants/typeSystem';
+import type { PartySlot } from '../../types/party';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const COMPACT_CARD_WIDTH = SCREEN_WIDTH * 0.60;
+const CARD_PHOTO_SIZE = 72;
 
-const STAT_CHIPS = [
-  { symbol: '⊙', value: String(MOCK_USER.totalCaught),    label: 'CAUGHT' },
-  { symbol: '⬡', value: String(MOCK_USER.uniqueSpecies),  label: 'SPECIES' },
-  { symbol: '▲', value: String(MOCK_USER.regionsExplored), label: 'REGIONS' },
-];
+// ─── Sub-components ──────────────────────────────────────────────────────────
 
-function SectionRule({ label }: { label: string }) {
+interface PartyCardProps {
+  slot: PartySlot | null;
+  slotIndex: number;
+}
+
+function EmptyCard({ slotIndex }: { slotIndex: number }) {
   return (
-    <View style={styles.sectionRule}>
-      <Text style={styles.sectionRuleLabel}>{label}</Text>
-      <View style={styles.sectionRuleLine} />
+    <View style={styles.emptyCard}>
+      <View style={styles.emptyPhotoPlaceholder}>
+        <Text style={styles.emptyPlus}>+</Text>
+      </View>
+      <View style={styles.cardInfo}>
+        <Text style={styles.emptySlotLabel}>SLOT {slotIndex + 1}</Text>
+        <Text style={styles.emptySlotSub}>Empty — catch an Anímon to fill</Text>
+      </View>
     </View>
   );
 }
 
-export default function DiscoverScreen() {
-  const handleCardPress = (animon: Animon) => {
-    router.push(`/animon/${animon.id}`);
-  };
+function PartyCard({ slot, slotIndex }: PartyCardProps) {
+  if (!slot) {
+    return <EmptyCard slotIndex={slotIndex} />;
+  }
+
+  const { animon } = slot;
+  const def = TYPE_DEFINITIONS[animon.types[0]];
+  const typeColor = def.color;
+  const textColor = def.textColor;
+  const textAlpha65 = textColor === '#FFFFFF' ? 'rgba(255,255,255,0.65)' : 'rgba(15,23,42,0.65)';
+  const levelBadgeBg = textColor === '#FFFFFF' ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.10)';
+
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.occupiedCard,
+        { backgroundColor: typeColor, shadowColor: typeColor },
+        pressed && { opacity: 0.85 }
+      ]}
+      onPress={() => router.push(`/animon/${animon.id}`)}
+    >
+      <View style={styles.cardInner}>
+        <View style={styles.photoWrap}>
+          <Image
+            source={{ uri: animon.photoUrl }}
+            style={styles.photo}
+            resizeMode="cover"
+          />
+          <View style={[styles.typeAccentBar, { backgroundColor: typeColor }]} />
+        </View>
+        <View style={styles.cardInfo}>
+          <View style={styles.cardInfoTop}>
+            <Text style={[styles.nickname, { color: textColor }]} numberOfLines={1}>{animon.nickname}</Text>
+            <View style={[styles.levelBadge, { backgroundColor: levelBadgeBg, borderWidth: 0 }]}>
+              <Text style={[styles.levelText, { color: textColor }]}>Lv.{animon.level}</Text>
+            </View>
+          </View>
+          <Text style={[styles.species, { color: textAlpha65 }]} numberOfLines={1}>{animon.species}</Text>
+          <View style={{ flexDirection: 'row', gap: 6, marginTop: 2 }}>
+            {animon.types.slice(0, 2).map((t) => (
+              <TypeTagChip key={t} type={t} size="sm" onCard />
+            ))}
+          </View>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+// ─── Screen ──────────────────────────────────────────────────────────────────
+
+export default function PartyScreen() {
+  const { slots } = usePartyStore();
+  const filled = slots.filter(Boolean).length;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -56,11 +108,11 @@ export default function DiscoverScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.wordmark}>ANÍLOG</Text>
-          <Text style={styles.screenTitle}>Field Log</Text>
+          <Text style={styles.screenTitle}>Your Party</Text>
         </View>
-        <Text style={styles.headerDate}>
-          {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()}
-        </Text>
+        <View style={styles.partyBadge}>
+          <Text style={styles.partyBadgeText}>{filled}/{PARTY_SIZE}</Text>
+        </View>
       </View>
 
       <ScrollView
@@ -68,73 +120,23 @@ export default function DiscoverScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Stat chips ── */}
-        <View style={styles.statRow}>
-          {STAT_CHIPS.map((chip) => (
-            <View key={chip.label} style={styles.statChip}>
-              <Text style={styles.statSymbol}>{chip.symbol}</Text>
-              <Text style={styles.statValue}>{chip.value}</Text>
-              <Text style={styles.statLabel}>{chip.label}</Text>
-            </View>
-          ))}
-        </View>
+        {slots.map((slot, index) => (
+          <PartyCard key={index} slot={slot} slotIndex={index} />
+        ))}
 
-        {/* ── Activity panel ── */}
-        <SectionRule label="NEARBY ACTIVITY" />
-        <View style={styles.activityPanel}>
-          {NEARBY_ACTIVITY.map((item) => (
-            <View
-              key={item.id}
-              style={[
-                styles.activityItem,
-                { borderLeftColor: colors.rarity[item.rarity as AnimonRarity] ?? colors.border },
-              ]}
-            >
-              <Text style={styles.activityMessage}>{item.message}</Text>
-              <View style={styles.activityMeta}>
-                <Text style={styles.activityRegion}>{item.region}</Text>
-                <Text style={styles.activityAgo}>{item.ago}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-
-        {/* ── Recent specimens horizontal scroll ── */}
-        <SectionRule label="RECENT SPECIMENS" />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.recentScroll}
-        >
-          {MOCK_RECENT.map((animon) => (
-            <View key={animon.id} style={{ width: COMPACT_CARD_WIDTH, marginRight: 12 }}>
-              <AnimonCard
-                animon={animon}
-                compact
-                onPress={handleCardPress}
-              />
-            </View>
-          ))}
-        </ScrollView>
-
-        {/* ── Full grid ── */}
-        <SectionRule label="ALL SPECIMENS" />
-        <View style={styles.grid}>
-          {MOCK_ANIMONS.map((animon) => (
-            <View key={animon.id} style={styles.gridItem}>
-              <AnimonCard animon={animon} onPress={handleCardPress} />
-            </View>
-          ))}
-        </View>
+        {filled < PARTY_SIZE && (
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              The world is out there. Go scan to grow your party.
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const GRID_SPACING = 12;
-const GRID_COLS = 2;
-const GRID_ITEM_WIDTH =
-  (SCREEN_WIDTH - GRID_SPACING * 3) / GRID_COLS;
+// ─── Styles ──────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -142,147 +144,183 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
 
-  // Dark header
+  // ── Header ─────────────────────────────────────────────────────────────────
   header: {
-    backgroundColor: colors.navDark,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    backgroundColor: colors.bg,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 22,
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   wordmark: {
     fontFamily: typography.fontFamily.mono,
     fontSize: typography.fontSize.sm,
+    letterSpacing: typography.letterSpacing.widest,
     color: colors.text3,
-    letterSpacing: 4,
-    textTransform: 'uppercase',
+    marginBottom: 4,
   },
   screenTitle: {
-    fontFamily: typography.fontFamily.bodySemiBold,
-    fontSize: typography.fontSize['3xl'],
-    color: colors.textInverse,
-    lineHeight: typography.fontSize['3xl'] * typography.lineHeight.tight,
-  },
-  headerDate: {
-    fontFamily: typography.fontFamily.mono,
-    fontSize: typography.fontSize.xs,
-    color: colors.accentDeep,
-    textAlign: 'right',
-  },
-
-  scroll: { flex: 1, backgroundColor: colors.bg },
-  scrollContent: { paddingBottom: 32 },
-
-  // Stat chips
-  statRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    gap: 0,
-    justifyContent: 'space-around',
-  },
-  statChip: {
-    alignItems: 'center',
-    flex: 1,
-    gap: 2,
-  },
-  statSymbol: {
-    fontSize: typography.fontSize.lg,
-    color: colors.text2,
-  },
-  statValue: {
     fontFamily: typography.fontFamily.bodyBold,
-    fontSize: typography.fontSize.md,
+    fontSize: typography.fontSize.xl,
     color: colors.text1,
-    lineHeight: typography.fontSize.md * typography.lineHeight.label,
+    lineHeight: typography.fontSize.xl * typography.lineHeight.tight,
   },
-  statLabel: {
-    fontFamily: typography.fontFamily.mono,
-    fontSize: 9,
-    color: colors.text3,
-    letterSpacing: typography.letterSpacing.label,
+  partyBadge: {
+    backgroundColor: colors.surface2,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  partyBadgeText: {
+    fontFamily: typography.fontFamily.monoBold,
+    fontSize: typography.fontSize.sm,
+    color: colors.text2,
+    letterSpacing: typography.letterSpacing.wide,
   },
 
-  // Section rule: mono label + extending line
-  sectionRule: {
+  // ── Scroll ─────────────────────────────────────────────────────────────────
+  scroll: { flex: 1, backgroundColor: colors.bg },
+  scrollContent: {
+    padding: 16,
+    gap: 14,
+    paddingBottom: 40,
+    backgroundColor: colors.bg,
+  },
+
+  // ── Shared card ─────────────────────────────────────────────────────────────
+  cardInfo: {
+    flex: 1,
+    paddingLeft: 16,
+    justifyContent: 'center',
+    gap: 5,
+  },
+
+  // ── Occupied card ───────────────────────────────────────────────────────────
+  occupiedCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  cardInner: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 10,
+    padding: 16,
+  },
+  photo: {
+    width: CARD_PHOTO_SIZE,
+    height: CARD_PHOTO_SIZE,
+    backgroundColor: colors.surface2,
+    borderRadius: 8,
+  },
+  photoWrap: {
+    width: CARD_PHOTO_SIZE,
+    height: CARD_PHOTO_SIZE,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: colors.surface2,
+  },
+  typeAccentBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 2,
+  },
+  cardInfoTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
-  sectionRuleLabel: {
-    fontFamily: typography.fontFamily.mono,
-    fontSize: 10,
+  nickname: {
+    fontFamily: typography.fontFamily.bodySemiBold,
+    fontSize: typography.fontSize.base,
+    flex: 1,
+  },
+  levelBadge: {
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  levelText: {
+    fontFamily: typography.fontFamily.monoBold,
+    fontSize: typography.fontSize.xs,
+    color: colors.text2,
+    letterSpacing: typography.letterSpacing.wide,
+  },
+  species: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.fontSize.sm,
+    letterSpacing: typography.letterSpacing.label,
+  },
+  // ── Empty slot card ────────────────────────────────────────────────────────────────────────
+  emptyCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    overflow: 'hidden',
+  },
+  emptyPhotoPlaceholder: {
+    width: CARD_PHOTO_SIZE,
+    height: CARD_PHOTO_SIZE,
+    borderRadius: 10,
+    backgroundColor: colors.surface2,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyPlus: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: 28,
+    color: colors.text3,
+    lineHeight: 32,
+  },
+  emptySlotLabel: {
+    fontFamily: typography.fontFamily.monoBold,
+    fontSize: typography.fontSize.xs,
     color: colors.text3,
     letterSpacing: typography.letterSpacing.widest,
   },
-  sectionRuleLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.border,
+  emptySlotSub: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.fontSize.xs,
+    color: colors.text3,
+    marginTop: 2,
   },
 
-  // Activity panel
-  activityPanel: {
-    marginHorizontal: 16,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  activityItem: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    borderLeftWidth: 2,
-    // borderLeftColor set inline per item (rarity colour)
-    gap: 4,
-  },
-  activityMessage: {
-    fontFamily: typography.fontFamily.body,
-    fontSize: typography.fontSize.base,
-    color: colors.text1,
-    lineHeight: typography.fontSize.base * typography.lineHeight.normal,
-  },
-  activityMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  // ── Footer ─────────────────────────────────────────────────────────────────
+  footer: {
+    marginTop: 8,
+    padding: 16,
     alignItems: 'center',
   },
-  activityRegion: {
-    fontFamily: typography.fontFamily.mono,
-    fontSize: typography.fontSize.xs,
+  footerText: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.fontSize.sm,
     color: colors.text3,
-  },
-  activityAgo: {
-    fontFamily: typography.fontFamily.mono,
-    fontSize: typography.fontSize.xs,
-    color: colors.text3,
-  },
-
-  // Recent carousel
-  recentScroll: {
-    paddingHorizontal: 16,
-    paddingBottom: 4,
-  },
-
-  // Full grid
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: GRID_SPACING,
-    gap: GRID_SPACING,
-  },
-  gridItem: {
-    width: GRID_ITEM_WIDTH,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    lineHeight: typography.fontSize.sm * 1.6,
   },
 });
 

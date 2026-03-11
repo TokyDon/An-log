@@ -61,3 +61,19 @@ export async function requestFuzzyLocation(): Promise<FuzzyLocationResult | null
 export function formatRegion(result: FuzzyLocationResult): string {
   return `${result.region}, ${result.country}`;
 }
+
+/**
+ * One-shot convenience: request location and return a display string.
+ * Returns 'Unknown location' if permission denied or geocode fails.
+ * Used by Phase 1 capture flow — pass result to animon.region.
+ */
+export async function getCaptureRegion(): Promise<string> {
+  const result = await requestFuzzyLocation();
+  if (!result) return 'Unknown location';
+  const city = result.region !== 'Unknown' ? result.region : '';
+  const country = result.country !== 'Unknown' ? result.country : '';
+  if (!city && !country) return 'Unknown location';
+  if (!city) return country;
+  if (!country) return city;
+  return `${city}, ${country}`;
+}

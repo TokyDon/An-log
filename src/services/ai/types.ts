@@ -1,5 +1,5 @@
 /**
- * Re-export AiIdentificationResult for consumers of the AI service layer.
+ * Re-export types for consumers of the AI service layer.
  * Keep import paths clean: import from 'services/ai/types', not from 'types/animon'.
  */
-export type { AiIdentificationResult } from '../../types/animon';
+export type { AiIdentificationResult, AnimonScanResult } from '../../types/animon';

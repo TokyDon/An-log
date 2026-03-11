@@ -23,7 +23,8 @@ import { colors } from '../../constants/colors';
 import { typography } from '../../constants/typography';
 import { AnimonCard } from '../../components/ui/AnimonCard';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { MOCK_ANIMONS } from '../../data/mockAnimons';
+import { useCollection } from '../../features/collection/useCollection';
+import { useCollectionStore } from '../../store/collectionStore';
 import { ANIMON_TYPES, TYPE_DEFINITIONS } from '../../constants/typeSystem';
 import type { Animon } from '../../types/animon';
 import type { AnimonType } from '../../types/animon';
@@ -44,12 +45,26 @@ const FILTER_OPTIONS: Array<{ key: FilterOption; label: string }> = [
 ];
 
 export default function AnilogScreen() {
+  const { data: supabaseAnimons = [] } = useCollection();
+  const localAnimons = useCollectionStore((s) => s.animons);
+
+  // Merge: local (seeded starters + captures) + server-synced, deduped by id
+  const animons = useMemo(() => {
+    const localIds = new Set(localAnimons.map((a) => a.id));
+    return [...localAnimons, ...supabaseAnimons.filter((a) => !localIds.has(a.id))];
+  }, [localAnimons, supabaseAnimons]);
+
   const [activeFilter, setActiveFilter] = useState<FilterOption>('all');
 
   const filteredAnimons = useMemo(() => {
-    if (activeFilter === 'all') return MOCK_ANIMONS;
-    return MOCK_ANIMONS.filter((a) => a.types.includes(activeFilter as AnimonType));
-  }, [activeFilter]);
+    const base =
+      activeFilter === 'all'
+        ? animons
+        : animons.filter((a) => a.types.includes(activeFilter as AnimonType));
+    return [...base].sort(
+      (a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime(),
+    );
+  }, [activeFilter, animons]);
 
   function handleCardPress(animon: Animon) {
     router.push(`/animon/${animon.id}`);
@@ -65,11 +80,11 @@ export default function AnilogScreen() {
       {/* â”€â”€ Dark header â”€â”€ */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.wordmark}>ANÃLOG</Text>
-          <Text style={styles.screenTitle}>My AnÃ­log</Text>
+          <Text style={styles.wordmark}>ANÍLOG</Text>
+          <Text style={styles.screenTitle}>My Collection</Text>
         </View>
         <View style={styles.specimenBadge}>
-          <Text style={styles.specimenBadgeText}>{MOCK_ANIMONS.length} LOGGED</Text>
+          <Text style={styles.specimenBadgeText}>{animons.length} LOGGED</Text>
         </View>
       </View>
 
@@ -90,7 +105,7 @@ export default function AnilogScreen() {
               style={[
                 styles.filterChip,
                 isActive
-                  ? [styles.filterChipActive, typeColor ? { borderColor: typeColor } : {}]
+                  ? [styles.filterChipActive, typeColor ? { backgroundColor: typeColor, borderColor: typeColor } : {}]
                   : styles.filterChipInactive,
               ]}
               onPress={() => setActiveFilter(opt.key)}
@@ -99,7 +114,7 @@ export default function AnilogScreen() {
                 style={[
                   styles.filterChipText,
                   isActive
-                    ? { color: typeColor ?? colors.text1 }
+                    ? { color: typeColor ? TYPE_DEFINITIONS[opt.key as AnimonType].textColor : colors.textInverse }
                     : styles.filterChipTextInactive,
                 ]}
               >
@@ -113,9 +128,13 @@ export default function AnilogScreen() {
       {/* â”€â”€ Grid â”€â”€ */}
       {filteredAnimons.length === 0 ? (
         <EmptyState
-          title={`No ${activeFilterLabel} specimens`}
-          description="Head outside and scan the next animal you find"
-          ctaLabel="OPEN SCANNER"
+          title={animons.length === 0 ? 'Your collection is empty' : `No ${activeFilterLabel} specimens`}
+          description={
+            animons.length === 0
+              ? 'Start scanning to discover Anímons!'
+              : 'Head outside and scan the next animal you find'
+          }
+          ctaLabel={animons.length === 0 ? 'START SCANNING' : 'OPEN SCANNER'}
           onCta={() => router.push('/camera')}
         />
       ) : (
@@ -127,8 +146,8 @@ export default function AnilogScreen() {
           columnWrapperStyle={styles.row}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
-            <View style={{ width: CARD_WIDTH }}>
-              <AnimonCard animon={item} onPress={handleCardPress} />
+            <View style={[{ width: CARD_WIDTH }, styles.cardWrapper]}>
+              <AnimonCard animon={item} onPress={handleCardPress} showPhoto />
             </View>
           )}
         />
@@ -145,29 +164,34 @@ const styles = StyleSheet.create({
 
   // Dark forestFloor header â€” mirrors Discover screen
   header: {
-    backgroundColor: colors.navDark,
+    backgroundColor: colors.bg,
     paddingHorizontal: SIDE_PAD,
-    paddingVertical: 16,
+    paddingTop: 16,
+    paddingBottom: 22,
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   wordmark: {
     fontFamily: typography.fontFamily.mono,
     fontSize: typography.fontSize.sm,
     color: colors.text3,
-    letterSpacing: 4,
+    letterSpacing: typography.letterSpacing.widest,
     textTransform: 'uppercase',
+    marginBottom: 4,
   },
   screenTitle: {
-    fontFamily: typography.fontFamily.bodySemiBold,
-    fontSize: typography.fontSize['3xl'],
-    color: colors.textInverse,
-    lineHeight: typography.fontSize['3xl'] * typography.lineHeight.tight,
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: typography.fontSize.xl,
+    color: colors.text1,
+    lineHeight: typography.fontSize.xl * typography.lineHeight.tight,
   },
   specimenBadge: {
+    backgroundColor: colors.surface2,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: colors.border,
     borderRadius: 3,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -175,7 +199,7 @@ const styles = StyleSheet.create({
   specimenBadgeText: {
     fontFamily: typography.fontFamily.mono,
     fontSize: typography.fontSize.xs,
-    color: colors.accent,
+    color: colors.text2,
     letterSpacing: typography.letterSpacing.label,
   },
 
@@ -193,7 +217,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   filterChip: {
-    borderRadius: 3,
+    borderRadius: 99,
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderWidth: 1,
@@ -203,8 +227,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   filterChipActive: {
-    backgroundColor: colors.surface2,
-    borderColor: colors.text1,
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   filterChipText: {
     fontFamily: typography.fontFamily.bodyMedium,
@@ -212,7 +236,7 @@ const styles = StyleSheet.create({
     letterSpacing: typography.letterSpacing.label,
   },
   filterChipTextInactive: {
-    color: colors.text2,
+    color: colors.text3,
   },
 
   // Grid
@@ -225,5 +249,8 @@ const styles = StyleSheet.create({
   },
   row: {
     gap: COLUMN_GAP,
+  },
+  cardWrapper: {
+    overflow: 'hidden',
   },
 });

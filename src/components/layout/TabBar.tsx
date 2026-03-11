@@ -2,8 +2,8 @@
  * TabBar — v3 Clean Modern
  *
  * White background, 1px top border, safe-area aware.
- * 5 items: Discover | Anilog | [FAB camera] | Logbook | Profile
- * Active: icon + label in accent + 4px dot below icon.
+ * 2 items: Party | [FAB camera] | Collection
+ * Active: icon + label in accent.
  * Inactive: icon + label in text3.
  * Centre FAB: 54px circle lifted 18px, accent gradient, white border.
  */
@@ -17,18 +17,17 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { colors } from '../../constants/colors';
 import { typography } from '../../constants/typography';
 
+// ★ Party  ◈ Collection  ◎ Stamps  ◐ Profile
 const TAB_CONFIG: Record<string, { icon: string; label: string }> = {
-  index:   { icon: '\u229E', label: 'Discover' },
-  anilog:  { icon: '\u25C8', label: 'Ani\u0301log' },
-  logbook: { icon: '\u25CE', label: 'Logbook' },
-  profile: { icon: '\u25D0', label: 'Profile' },
+  index:   { icon: '\u2605', label: 'Party'      },
+  anilog:  { icon: '\u25C8', label: 'Collection' },
+  logbook: { icon: '\u25CE', label: 'Stamps'     },
+  profile: { icon: '\u25D0', label: 'Profile'    },
 };
 
 export function TabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-
-  const leftRoutes = state.routes.slice(0, 2);
-  const rightRoutes = state.routes.slice(2);
+  const focusedRouteName = state.routes[state.index]?.name;
 
   return (
     <View
@@ -40,15 +39,19 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
       {/* 1px top border */}
       <View style={styles.topBorder} />
 
-      {/* Left two tabs */}
-      {leftRoutes.map((route, index) => (
-        <TabItem
-          key={route.key}
-          routeName={route.name}
-          isFocused={state.index === index}
-          onPress={() => navigation.navigate(route.name)}
-        />
-      ))}
+      {/* Left tab: Party */}
+      <TabItem
+        routeName="index"
+        isFocused={focusedRouteName === 'index'}
+        onPress={() => navigation.navigate('index')}
+      />
+
+      {/* Centre-left tab: Collection */}
+      <TabItem
+        routeName="anilog"
+        isFocused={focusedRouteName === 'anilog'}
+        onPress={() => navigation.navigate('anilog')}
+      />
 
       {/* Centre FAB */}
       <View style={styles.fabWrap}>
@@ -63,20 +66,23 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
             end={{ x: 0, y: 1 }}
             style={StyleSheet.absoluteFill}
           />
-          {/* Camera icon — SVG approximated with unicode */}
           <Text style={styles.fabIcon}>{'\u23F7'}</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Right two tabs */}
-      {rightRoutes.map((route, index) => (
-        <TabItem
-          key={route.key}
-          routeName={route.name}
-          isFocused={state.index === (index + 2)}
-          onPress={() => navigation.navigate(route.name)}
-        />
-      ))}
+      {/* Centre-right tab: Stamps */}
+      <TabItem
+        routeName="logbook"
+        isFocused={focusedRouteName === 'logbook'}
+        onPress={() => navigation.navigate('logbook')}
+      />
+
+      {/* Right tab: Profile */}
+      <TabItem
+        routeName="profile"
+        isFocused={focusedRouteName === 'profile'}
+        onPress={() => navigation.navigate('profile')}
+      />
     </View>
   );
 }
@@ -105,8 +111,6 @@ function TabItem({ routeName, isFocused, onPress }: TabItemProps) {
       >
         {config.icon}
       </Text>
-      {/* Active dot */}
-      {isFocused && <View style={styles.activeDot} />}
       <Text
         style={[
           styles.tabLabel,
@@ -123,7 +127,7 @@ const FAB_SIZE = 54;
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.navDark,
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingTop: 8,
@@ -149,12 +153,6 @@ const styles = StyleSheet.create({
   },
   iconActive:   { color: colors.accent },
   iconInactive: { color: colors.text3 },
-  activeDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.accent,
-  },
   tabLabel: {
     fontFamily: typography.fontFamily.mono,
     fontSize: 8,

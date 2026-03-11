@@ -6,7 +6,7 @@
  * Route: /animon/[id]
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -21,9 +21,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { colors } from '../../constants/colors';
 import { typography } from '../../constants/typography';
+import { TYPE_DEFINITIONS } from '../../constants/typeSystem';
 import { RarityBadge } from '../../components/ui/RarityBadge';
 import { TypeTagChip } from '../../components/ui/TypeTagChip';
-import { MOCK_ANIMONS } from '../../data/mockAnimons';
+import { useCollectionStore } from '../../store/collectionStore';
+import { usePartyStore } from '../../store/partyStore';
+import { SPECIES_REGISTRY } from '../../data/speciesRegistry';
+import type { SpeciesEntry } from '../../data/speciesRegistry';
+import { getIllustrationUrl, getCapturePhotoUrl } from '../../services/supabase/storage';
+import { getAnimon } from '../../services/supabase/animons';
+import type { Animon } from '../../types/animon';
 
 const { height: H } = Dimensions.get('window');
 const HERO_HEIGHT = 280;
@@ -42,7 +49,11 @@ function genderLabel(g: string): string {
 
 export default function AnimonDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const animon = MOCK_ANIMONS.find((a) => a.id === id);
+  const animons = useCollectionStore((s) => s.animons);
+  const partySlots = usePartyStore((s) => s.slots);
+  const animon =
+    animons.find((a) => a.id === id) ??
+    partySlots.flatMap((s) => (s ? [s.animon] : [])).find((a) => a.id === id);
 
   if (!animon) {
     return (
@@ -62,8 +73,10 @@ export default function AnimonDetailScreen() {
     { label: 'CAUGHT',     value: formatDate(animon.capturedAt) },
   ];
 
+  const typeColor = TYPE_DEFINITIONS[animon.types[0]].color;
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: typeColor }]}>
       {/* ── Hero Image ──────────────────────────────────────────── */}
       <View style={[styles.hero, { height: HERO_HEIGHT }]}>
         <Image
@@ -74,7 +87,7 @@ export default function AnimonDetailScreen() {
         />
         {/* Gradient fade at bottom */}
         <LinearGradient
-          colors={['transparent', 'rgba(26,18,8,0.88)']}
+          colors={['transparent', 'rgba(17,17,17,0.82)']}
           style={styles.heroGradient}
         />
         {/* Species name on gradient */}
@@ -217,7 +230,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: 'rgba(26,18,8,0.70)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -232,12 +245,12 @@ const styles = StyleSheet.create({
   // Bottom sheet
   sheet: {
     flex: 1,
-    backgroundColor: colors.surface2,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: colors.bg,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
   },
   sheetContent: {
-    padding: 20,
+    padding: 16,
     paddingTop: 12,
   },
   sheetHandle: {
@@ -262,7 +275,7 @@ const styles = StyleSheet.create({
   },
   dataDate: {
     fontFamily: typography.fontFamily.mono,
-    fontSize: 11,
+    fontSize: typography.fontSize.xs,
     color: colors.text3,
     letterSpacing: 0.8,
   },
@@ -272,7 +285,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: colors.surface2,
+    backgroundColor: colors.surface,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -282,14 +295,14 @@ const styles = StyleSheet.create({
   },
   idLabel: {
     fontFamily: typography.fontFamily.mono,
-    fontSize: 11,
-    color: colors.text1,
+    fontSize: typography.fontSize.xs,
+    color: colors.text3,
     letterSpacing: 1.5,
   },
   idValue: {
     fontFamily: typography.fontFamily.monoBold,
-    fontSize: 16,
-    color: colors.text3,
+    fontSize: typography.fontSize.md,
+    color: colors.text1,
     letterSpacing: 1,
   },
 
@@ -297,37 +310,37 @@ const styles = StyleSheet.create({
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
     marginBottom: 16,
   },
   statCell: {
     flex: 1,
     minWidth: '44%',
     height: 80,
-    backgroundColor: colors.bezel,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
     gap: 6,
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: colors.border,
   },
   statLabel: {
     fontFamily: typography.fontFamily.mono,
-    fontSize: 10,
+    fontSize: typography.fontSize.xs,
     color: colors.text3,
     letterSpacing: 1.5,
   },
   statValue: {
-    fontFamily: typography.fontFamily.monoBold,
-    fontSize: 17,
-    color: colors.accent,
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: typography.fontSize.md,
+    color: colors.text1,
   },
 
   // Capture notes
   notesCard: {
     backgroundColor: colors.surface,
-    borderRadius: 14,
+    borderRadius: 12,
     padding: 16,
     gap: 0,
     borderWidth: 1,
@@ -335,7 +348,7 @@ const styles = StyleSheet.create({
   },
   notesTitle: {
     fontFamily: typography.fontFamily.mono,
-    fontSize: 11,
+    fontSize: typography.fontSize.xs,
     color: colors.text3,
     letterSpacing: 2,
     marginBottom: 12,
@@ -351,7 +364,7 @@ const styles = StyleSheet.create({
   },
   noteKey: {
     fontFamily: typography.fontFamily.mono,
-    fontSize: 11,
+    fontSize: typography.fontSize.xs,
     color: colors.text3,
     letterSpacing: 1,
   },

@@ -1,2 +1,3 @@
-export type { Animon, AnimonRarity, AnimonType, AiIdentificationResult, CollectionStats } from './animon';
+export type { Animon, AnimonRarity, AnimonType, AiIdentificationResult, AnimonScanResult, CollectionStats } from './animon';
 export type { UserProfile, UserStats } from './user';
+export type { PartyAnimon, PartySlot } from './party';

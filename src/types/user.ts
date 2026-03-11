@@ -9,6 +9,7 @@ export interface UserProfile {
   avatarUrl: string | null;
   bio: string | null;
   createdAt: string; // ISO 8601
+  emailConfirmed: boolean;
 }
 
 export interface UserStats {

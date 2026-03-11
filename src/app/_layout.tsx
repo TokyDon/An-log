@@ -6,9 +6,12 @@
  */
 
 import { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { View } from 'react-native';
+import { Stack, router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { supabase } from '../services/supabase/client';
 import {
   useFonts,
   PlusJakartaSans_400Regular,
@@ -48,12 +51,35 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync();
-    }
+    if (!fontsLoaded) return;
+    SplashScreen.hideAsync();
+
+    // Single source of truth for all auth-driven routing.
+    // INITIAL_SESSION fires on app load (session present or null).
+    // SIGNED_IN fires after login/register.
+    // SIGNED_OUT fires after signOut.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const onboardingComplete = await AsyncStorage.getItem('onboarding_complete');
+
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+        if (!session) {
+          router.replace('/(auth)');
+        } else {
+          if (!onboardingComplete) {
+            router.replace('/onboarding');
+          } else {
+            router.replace('/(tabs)');
+          }
+        }
+      } else if (event === 'SIGNED_OUT') {
+        router.replace('/(auth)');
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded) return <View style={{ flex: 1, backgroundColor: '#FAFAF5' }} />;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -61,8 +87,10 @@ export default function RootLayout() {
         <StatusBar style="dark" />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="camera" options={{ presentation: 'fullScreenModal' }} />
           <Stack.Screen name="animon/[id]" options={{ presentation: 'card' }} />
+          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         </Stack>
       </QueryClientProvider>
     </GestureHandlerRootView>

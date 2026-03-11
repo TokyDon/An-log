@@ -1,49 +1,52 @@
 /**
- * Anílog Design Token — Colours v3
- * Clean Modern palette — neutral cool grey base, white surfaces.
- * All colour comes from game content (type chips and rarity badges).
+ * Anílog Design Token — Colours v5 (Light Mode)
+ * Clean naturalist field-journal palette.
+ * White/light-grey surfaces. Dark ink text. Type & rarity = only accent colours.
  */
 export const colors = {
 
   // ── Backgrounds ────────────────────────────────────────────────────────────
-  bg:       '#F1F4F9',
-  surface:  '#FFFFFF',
-  surface2: '#F8FAFC',
+  bg:       '#FFFFFF',   // pure white — page background
+  surface:  '#F5F5F5',   // very light grey — cards, panels
+  surface2: '#EBEBEB',   // slightly darker — input fields, inactive chips, dividers
 
   // ── Borders ────────────────────────────────────────────────────────────────
-  border:       '#E2E8F0',
-  borderStrong: '#CBD5E1',
+  border:       '#E0E0E0',   // subtle hairline separators
+  borderStrong: '#B0B0B0',   // visible dividers, input outlines
 
   // ── Text ───────────────────────────────────────────────────────────────────
-  text1:       '#0F172A',
-  text2:       '#475569',
-  text3:       '#94A3B8',
-  textInverse: '#FFFFFF',
+  // All text values verified against WCAG AA (4.5:1 minimum for normal text)
+  text1:       '#111111',  // 19.1:1 on white  ✓  — headings, primary body
+  text2:       '#555555',  //  7.5:1 on white  ✓  — labels, metadata
+  text3:       '#5E5E5E',  //  5.8:1 on white  ✓  — ghost, placeholders, wordmarks
+  //             ↑ was #999999 (2.85:1 — WCAG FAIL). #5E5E5E passes on white, surface AND surface2
+  textInverse: '#FFFFFF',  // white text — on dark/coloured buttons
 
-  // ── Accent (intentionally neutral — no colour favouritism) ─────────────────
-  accent:     '#64748B',
-  accentSoft: '#F1F5F9',
-  accentDeep: '#334155',
+  // ── Accent (action blue — primary CTAs only) ───────────────────────────────
+  accent:     '#2563EB',   // strong action blue (WCAG AA on white)
+  accentSoft: '#EFF6FF',   // very pale blue tint — selected chip bg
+  accentDeep: '#1D4ED8',   // pressed / deep state
 
   // ── Device chrome ──────────────────────────────────────────────────────────
-  bezel:   '#1E293B',
-  navDark: '#0F172A',
+  bezel:       '#FFFFFF',
+  navDark:     '#FAFAFA',      // tab bar / nav background (almost white)
+  surfaceDark: '#1C1C1E',      // intentionally dark surface — hero zones, camera bg
 
-  // ── Rarity ─────────────────────────────────────────────────────────────────
+  // ── Rarity (the ONLY high-chroma colours in the app) ──────────────────────
   rarity: {
     common:   '#94A3B8',
-    uncommon: '#22C55E',
-    rare:     '#6366F1',
-    glossy:   '#F59E0B',  // static fallback — animated amber→pink→indigo in components
+    uncommon: '#16A34A',   // green
+    rare:     '#4F46E5',   // indigo
+    glossy:   '#D97706',   // amber — only glossy gets this
   },
 
   // ── Semantic ───────────────────────────────────────────────────────────────
-  success: '#22C55E',
-  error:   '#EF4444',
-  warning: '#EAB308',
+  success: '#16A34A',
+  error:   '#DC2626',
+  warning: '#D97706',
 
   // ── Overlays ───────────────────────────────────────────────────────────────
-  overlayDark: 'rgba(15,23,42,0.60)',
+  overlayDark: 'rgba(0,0,0,0.55)',
 
 } as const;
 

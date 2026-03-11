@@ -14,18 +14,24 @@ import type { AnimonType } from '../../types/animon';
 interface TypeTagChipProps {
   type: AnimonType;
   size?: 'sm' | 'md';
+  onCard?: boolean;
 }
 
-export function TypeTagChip({ type, size = 'md' }: TypeTagChipProps) {
+export function TypeTagChip({ type, size = 'md', onCard = false }: TypeTagChipProps) {
   const def = TYPE_DEFINITIONS[type];
   if (!def) return null;
+
+  const isLightType = def.textColor !== '#FFFFFF';
+  const chipBg = onCard
+    ? (isLightType ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.22)')
+    : def.color;
 
   return (
     <View
       style={[
         styles.chip,
         size === 'sm' ? styles.chipSm : styles.chipMd,
-        { backgroundColor: def.color },
+        { backgroundColor: chipBg },
       ]}
     >
       <Text

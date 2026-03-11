@@ -1,21 +1,22 @@
-/**
- * Camera Screen — Full-Screen Modal
+﻿/**
+ * Camera Screen â€” Full-Screen Modal
  *
- * BioField Scanner MK-II — amber reticle, scan-line animation,
- * dark device chrome, result bottom sheet.
+ * BioField Scanner MK-II â€” Phase 1 automatic scan loop.
+ * Fires every 3 seconds, lock-on animation on detection, inline toasts.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
+  ScrollView,
   StyleSheet,
   TouchableOpacity,
   Dimensions,
   StatusBar,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
 import Animated, {
   useSharedValue,
@@ -25,38 +26,101 @@ import Animated, {
   withSequence,
   withTiming,
   Easing,
+  interpolate,
 } from 'react-native-reanimated';
 import { colors } from '../constants/colors';
 import { typography } from '../constants/typography';
 import { RarityBadge } from '../components/ui/RarityBadge';
 import { TypeTagChip } from '../components/ui/TypeTagChip';
-import { MOCK_ANIMONS } from '../data/mockAnimons';
+import { AchievementUnlockToast } from '../components/ui/AchievementUnlockToast';
+import { useCapture } from '../features/capture/useCapture';
+import { getScanCount } from '../services/supabase/scans';
+import { resendVerificationEmail } from '../services/supabase/auth';
+import { useAuthStore } from '../store/authStore';
+import { SPECIES_REGISTRY } from '../data/speciesRegistry';
+import type { SpeciesEntry } from '../data/speciesRegistry';
+import { getIllustrationUrl } from '../services/supabase/storage';
 
-const { width: W, height: H } = Dimensions.get('window');
+const { height: H } = Dimensions.get('window');
 const RETICLE_SIZE = 240;
 const CORNER = 24;
 const CORNER_T = 3;
+const FREE_SCAN_LIMIT = 20;
 
-const MOCK_RESULT = MOCK_ANIMONS[9]; // Red Fox — rare
+type CaptureState = 'idle' | 'loop_active' | 'analysing' | 'lock_on' | 'result';
 
-type CaptureState = 'idle' | 'scanning' | 'result';
+// â”€â”€â”€ Inline Toast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-export default function CameraScreen() {
-  const [captureState, setCaptureState] = useState<CaptureState>('idle');
-  const [flashOn, setFlashOn] = useState(false);
+interface ToastProps {
+  message: string;
+  visible: boolean;
+}
 
-  // Scan line Y offset (within reticle)
-  const scanY = useSharedValue(0);
-  // Blink text
-  const blinkOpacity = useSharedValue(1);
-  // Pulse ring
-  const pulseScale = useSharedValue(1);
-  const pulseOpacity = useSharedValue(0.4);
-  // Result card
-  const resultY = useSharedValue(H);
+function InlineToast({ message, visible }: ToastProps) {
+  const slideY = useSharedValue(64);
 
   useEffect(() => {
-    // Scan line loop
+    slideY.value = withTiming(visible ? 0 : 64, { duration: 250 });
+  }, [visible, slideY]);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ translateY: slideY.value }],
+  }));
+
+  return (
+    <Animated.View style={[styles.inlineToast, style]}>
+      <Text style={styles.inlineToastText}>{message}</Text>
+    </Animated.View>
+  );
+}
+
+export default function CameraScreen() {
+  const user = useAuthStore((s) => s.user);
+  const [captureState, setCaptureState] = useState<CaptureState>('idle');
+  const [flashOn, setFlashOn] = useState(false);
+  const [permission, requestPermission] = useCameraPermissions();
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastVisible, setToastVisible] = useState(false);
+  const [scansUsed, setScansUsed] = useState(0);
+  const [illustrationUrl, setIllustrationUrl] = useState<string | null>(null);
+  const [speciesEntry, setSpeciesEntry] = useState<SpeciesEntry | null>(null);
+  const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [resendError, setResendError] = useState<string | null>(null);
+
+  const cameraRef = useRef<CameraView>(null);
+  /** Mirrors captureState synchronously for use inside async interval callbacks. */
+  const captureStateRef = useRef<CaptureState>('idle');
+  /** species â†’ timestamp of last successful capture this session. */
+  const recentCapturesRef = useRef<Map<string, number>>(new Map());
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const {
+    captured,
+    capturedPhotoUri,
+    error,
+    scanLimitReached,
+    pendingAchievement,
+    capture,
+    reset,
+    clearPendingAchievement,
+  } = useCapture();
+
+  // â”€â”€ Animations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const scanY = useSharedValue(0);
+  const blinkOpacity = useSharedValue(1);
+  const pulseScale = useSharedValue(1);
+  const pulseOpacity = useSharedValue(0.4);
+  const resultY = useSharedValue(H);
+  /** 0 = default reticle, 1 = fully locked-on. */
+  const lockOnProgress = useSharedValue(0);
+
+  // Keep ref mirroring state for async callbacks
+  useEffect(() => {
+    captureStateRef.current = captureState;
+  }, [captureState]);
+
+  // â”€â”€ Boot animations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  useEffect(() => {
     scanY.value = withRepeat(
       withSequence(
         withTiming(RETICLE_SIZE - 4, { duration: 1600, easing: Easing.linear }),
@@ -65,7 +129,6 @@ export default function CameraScreen() {
       -1,
       false,
     );
-    // Blink
     blinkOpacity.value = withRepeat(
       withSequence(
         withTiming(1, { duration: 600 }),
@@ -74,7 +137,6 @@ export default function CameraScreen() {
       -1,
       false,
     );
-    // Pulse ring
     pulseScale.value = withRepeat(
       withTiming(1.25, { duration: 1800, easing: Easing.out(Easing.ease) }),
       -1,
@@ -88,8 +150,118 @@ export default function CameraScreen() {
       -1,
       false,
     );
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // â”€â”€ Fetch initial scan count â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  useEffect(() => {
+    if (!user) return;
+    getScanCount(user.id).then(setScansUsed).catch(() => {});
+  }, [user]);
+
+  // â”€â”€ Toast helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const showToast = useCallback((msg: string, duration: number) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastMessage(msg);
+    setToastVisible(true);
+    toastTimerRef.current = setTimeout(() => setToastVisible(false), duration);
   }, []);
 
+  // â”€â”€ Auto scan loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  useEffect(() => {
+    if (captureState !== 'loop_active') return;
+
+    const tick = async () => {
+      if (captureStateRef.current !== 'loop_active') return;
+      if (!cameraRef.current) return;
+
+      captureStateRef.current = 'analysing';
+      setCaptureState('analysing');
+
+      try {
+        const photo = await cameraRef.current.takePictureAsync({
+          base64: true,
+          quality: 0.5,
+        });
+
+        if (captureStateRef.current !== 'analysing') return;
+
+        if (!photo?.base64) {
+          captureStateRef.current = 'loop_active';
+          setCaptureState('loop_active');
+          return;
+        }
+
+        await capture(photo.base64, photo.uri);
+        // State transitions handled by useEffect watching `captured` / `error`
+      } catch {
+        if (captureStateRef.current === 'analysing') {
+          captureStateRef.current = 'loop_active';
+          setCaptureState('loop_active');
+        }
+      }
+    };
+
+    const id = setInterval(tick, 3000);
+    return () => clearInterval(id);
+  }, [captureState, capture]);
+
+  // â”€â”€ Handle successful capture â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  useEffect(() => {
+    if (!captured) return;
+
+    const now = Date.now();
+    const lastTime = recentCapturesRef.current.get(captured.species);
+
+    if (lastTime !== undefined && now - lastTime < 5 * 60 * 1000) {
+      showToast("You already have one nearby! Try something different.", 3000);
+      reset();
+      captureStateRef.current = 'loop_active';
+      setCaptureState('loop_active');
+      return;
+    }
+
+    recentCapturesRef.current.set(captured.species, now);
+
+    captureStateRef.current = 'lock_on';
+    setCaptureState('lock_on');
+    lockOnProgress.value = withTiming(1, { duration: 1500 });
+
+    const t = setTimeout(() => {
+      captureStateRef.current = 'result';
+      setCaptureState('result');
+      resultY.value = withSpring(0, { damping: 22, stiffness: 100 });
+      if (user) getScanCount(user.id).then(setScansUsed).catch(() => {});
+      if (captured) {
+        const entry = SPECIES_REGISTRY.find(e => e.id === captured.species) ?? null;
+        setSpeciesEntry(entry);
+        if (entry) {
+          getIllustrationUrl(entry.illustrationKey).then(url => setIllustrationUrl(url ?? null)).catch(() => {});
+        }
+      }
+    }, 1500);
+
+    return () => clearTimeout(t);
+  }, [captured]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // â”€â”€ Handle capture error â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  useEffect(() => {
+    if (!error) return;
+    if (captureStateRef.current !== 'analysing') return;
+
+    const lower = error.toLowerCase();
+    if (lower.includes('screen')) {
+      showToast("Point at a real animal!", 2000);
+    } else if (!lower.includes('no animal')) {
+      showToast(error, 3000);
+    }
+    // "no animal" â†’ silent, loop continues
+
+    reset();
+    captureStateRef.current = 'loop_active';
+    setCaptureState('loop_active');
+  }, [error]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // â”€â”€ Animated styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const scanLine = useAnimatedStyle(() => ({ transform: [{ translateY: scanY.value }] }));
   const blinkStyle = useAnimatedStyle(() => ({ opacity: blinkOpacity.value }));
   const pulseStyle = useAnimatedStyle(() => ({
@@ -100,36 +272,183 @@ export default function CameraScreen() {
     transform: [{ translateY: resultY.value }],
   }));
 
-  function handleCapture() {
-    if (captureState !== 'idle') return;
-    setCaptureState('scanning');
-    setTimeout(() => {
-      setCaptureState('result');
-      resultY.value = withSpring(0, { damping: 22, stiffness: 100 });
-    }, 1800);
+  // Lock-on: corners converge toward centre
+  const cornerTLStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: interpolate(lockOnProgress.value, [0, 1], [0, 8]) },
+      { translateY: interpolate(lockOnProgress.value, [0, 1], [0, 8]) },
+    ],
+    opacity: interpolate(lockOnProgress.value, [0, 1], [0.85, 1]),
+  }));
+  const cornerTRStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: interpolate(lockOnProgress.value, [0, 1], [0, -8]) },
+      { translateY: interpolate(lockOnProgress.value, [0, 1], [0, 8]) },
+    ],
+    opacity: interpolate(lockOnProgress.value, [0, 1], [0.85, 1]),
+  }));
+  const cornerBLStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: interpolate(lockOnProgress.value, [0, 1], [0, 8]) },
+      { translateY: interpolate(lockOnProgress.value, [0, 1], [0, -8]) },
+    ],
+    opacity: interpolate(lockOnProgress.value, [0, 1], [0.85, 1]),
+  }));
+  const cornerBRStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: interpolate(lockOnProgress.value, [0, 1], [0, -8]) },
+      { translateY: interpolate(lockOnProgress.value, [0, 1], [0, -8]) },
+    ],
+    opacity: interpolate(lockOnProgress.value, [0, 1], [0.85, 1]),
+  }));
+  const lockOnGlowStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(lockOnProgress.value, [0, 0.5, 1], [0, 0.35, 0.15]),
+  }));
+
+  const remaining = Math.max(0, FREE_SCAN_LIMIT - scansUsed);
+
+  // â”€â”€ Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  function handleStartScanning() {
+    captureStateRef.current = 'loop_active';
+    setCaptureState('loop_active');
   }
 
-  function handleRetry() {
+  function handleStopScanning() {
+    captureStateRef.current = 'idle';
+    setCaptureState('idle');
+  }
+
+  function handleScanAgain() {
     resultY.value = withTiming(H, { duration: 300 });
-    setTimeout(() => setCaptureState('idle'), 320);
+    lockOnProgress.value = withTiming(0, { duration: 150 });
+    setIllustrationUrl(null);
+    setSpeciesEntry(null);
+    setTimeout(() => {
+      reset();
+      captureStateRef.current = 'loop_active';
+      setCaptureState('loop_active');
+    }, 320);
   }
 
-  function handleAdd() {
-    router.back();
+  function handleClose() {
+    resultY.value = withTiming(H, { duration: 300 });
+    lockOnProgress.value = withTiming(0, { duration: 150 });
+    setIllustrationUrl(null);
+    setSpeciesEntry(null);
+    setTimeout(() => {
+      reset();
+      captureStateRef.current = 'idle';
+      setCaptureState('idle');
+    }, 320);
   }
+
+  function handleViewCollection() {
+    resultY.value = withTiming(H, { duration: 300 });
+    lockOnProgress.value = withTiming(0, { duration: 150 });
+    setIllustrationUrl(null);
+    setSpeciesEntry(null);
+    setTimeout(() => {
+      reset();
+      captureStateRef.current = 'idle';
+      setCaptureState('idle');
+      router.replace('/(tabs)/anilog' as never);
+    }, 320);
+  }
+
+  // â”€â”€ Permission gates â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Email verification gate ────────────────────────────────────────────────
+  if (user && !user.emailConfirmed) {
+    async function handleResend() {
+      setResendState('sending');
+      setResendError(null);
+      try {
+        await resendVerificationEmail(user!.username);
+        setResendState('sent');
+      } catch (e: unknown) {
+        setResendState('error');
+        setResendError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+      }
+    }
+
+    return (
+      <View style={styles.emailGateContainer}>
+        <StatusBar barStyle="dark-content" />
+        <TouchableOpacity style={styles.emailGateBack} onPress={() => router.back()}>
+          <Text style={styles.emailGateBackText}>← Back</Text>
+        </TouchableOpacity>
+        <View style={styles.emailGateContent}>
+          <Text style={styles.emailGateIcon}>📧</Text>
+          <Text style={styles.emailGateHeadline}>Verify your email</Text>
+          <Text style={styles.emailGateBody}>
+            Check your inbox and click the verification link to start scanning.
+          </Text>
+          <Text style={styles.emailGateEmail}>{user.username}</Text>
+          <TouchableOpacity
+            style={[
+              styles.emailGateResendBtn,
+              resendState === 'sending' && styles.emailGateResendBtnDisabled,
+              resendState === 'sent' && styles.emailGateResendBtnSent,
+            ]}
+            onPress={handleResend}
+            disabled={resendState === 'sending' || resendState === 'sent'}
+          >
+            <Text style={styles.emailGateResendBtnText}>
+              {resendState === 'sending' ? 'Sending…' : resendState === 'sent' ? 'Sent! ✓' : 'Resend email'}
+            </Text>
+          </TouchableOpacity>
+          {resendState === 'error' && resendError !== null && (
+            <Text style={styles.emailGateResendError}>{resendError}</Text>
+          )}
+          <Text style={styles.emailGateHint}>
+            Email not verified? Try signing out and back in.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (!permission) return <View style={styles.container} />;
+
+  if (!permission.granted) {
+    return (
+      <View style={[styles.container, { alignItems: 'center', justifyContent: 'center', gap: 16 }]}>
+        <Text style={{ color: colors.textInverse, fontFamily: typography.fontFamily.body, fontSize: typography.fontSize.base }}>
+          Camera access is required to scan wildlife.
+        </Text>
+        <TouchableOpacity onPress={requestPermission} style={{ padding: 12 }}>
+          <Text style={{ color: colors.accent, fontFamily: typography.fontFamily.bodyBold, fontSize: typography.fontSize.base }}>
+            Grant Permission
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const statusLabel =
+    captureState === 'analysing'   ? 'IDENTIFYING...' :
+    captureState === 'lock_on'     ? 'LOCK-ON â—†' :
+    captureState === 'loop_active' ? 'SCANNING...' :
+    'READY';
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
-      {/* ── Viewfinder ──────────────────────────────────────────── */}
+      {/* â”€â”€ Viewfinder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <View style={styles.viewfinder}>
-        <Image
-          source={{ uri: MOCK_RESULT.photoUrl }}
-          style={StyleSheet.absoluteFill}
-          contentFit="cover"
-          blurRadius={captureState === 'scanning' ? 3 : 0}
-        />
+        {captureState === 'result' && captured ? (
+          <Image
+            source={{ uri: capturedPhotoUri ?? captured.photoUrl }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+          />
+        ) : (
+          <CameraView
+            ref={cameraRef}
+            style={StyleSheet.absoluteFill}
+            flash={flashOn ? 'on' : 'off'}
+          />
+        )}
         <View style={styles.overlay} />
 
         {/* Reticle */}
@@ -137,12 +456,15 @@ export default function CameraScreen() {
           {/* Pulse ring */}
           <Animated.View style={[styles.pulseRing, pulseStyle]} />
 
-          {/* Amber corner brackets */}
+          {/* Lock-on success glow */}
+          <Animated.View style={[styles.lockOnGlow, lockOnGlowStyle]} />
+
+          {/* Corner brackets â€” animated convergence on lock-on */}
           <View style={styles.reticle}>
-            <View style={[styles.corner, styles.cornerTL]} />
-            <View style={[styles.corner, styles.cornerTR]} />
-            <View style={[styles.corner, styles.cornerBL]} />
-            <View style={[styles.corner, styles.cornerBR]} />
+            <Animated.View style={[styles.corner, styles.cornerTL, cornerTLStyle]} />
+            <Animated.View style={[styles.corner, styles.cornerTR, cornerTRStyle]} />
+            <Animated.View style={[styles.corner, styles.cornerBL, cornerBLStyle]} />
+            <Animated.View style={[styles.corner, styles.cornerBR, cornerBRStyle]} />
 
             {/* Animated scan line */}
             <View style={styles.scanLineClip}>
@@ -152,102 +474,156 @@ export default function CameraScreen() {
 
           {/* Status text */}
           <Animated.View style={[styles.statusWrap, blinkStyle]}>
-            <Text style={styles.statusText}>
-              {captureState === 'scanning' ? 'IDENTIFYING...' : 'SCANNING...'}
+            <Text style={[
+              styles.statusText,
+              captureState === 'lock_on' && { color: colors.success },
+            ]}>
+              {statusLabel}
             </Text>
           </Animated.View>
         </View>
       </View>
 
-      {/* ── Top bar ─────────────────────────────────────────────── */}
+      {/* â”€â”€ Top bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.closeBtn} onPress={() => router.back()}>
-          <Text style={styles.closeIcon}>✕</Text>
+          <Text style={styles.closeIcon}>âœ•</Text>
         </TouchableOpacity>
         <Text style={styles.topLabel}>SCANNER MK-II</Text>
-        <View style={styles.modeToggle}>
-          <Text style={styles.modeActive}>PHOTO</Text>
-          <Text style={styles.modeInactive}>VIDEO</Text>
-        </View>
+        {/* AC-01.9 â€” scan counter badge */}
+        {!scanLimitReached && (
+          <View style={styles.scanBadge}>
+            <Text style={styles.scanBadgeText}>âš¡ {remaining}</Text>
+          </View>
+        )}
       </View>
 
-      {/* ── Shutter panel ──────────────────────────────────────── */}
+      {/* â”€â”€ Control panel (replaces shutter) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {captureState !== 'result' && (
-        <View style={styles.shutterPanel}>
-          {/* Gallery thumb placeholder */}
-          <View style={styles.galleryThumb} />
-
-          {/* Shutter button */}
+        <View style={styles.controlPanel}>
           <TouchableOpacity
-            onPress={handleCapture}
-            disabled={captureState === 'scanning'}
-            activeOpacity={0.8}
+            style={styles.flashToggle}
+            onPress={() => setFlashOn((f) => !f)}
           >
-            <LinearGradient
-              colors={
-                captureState === 'scanning'
-                  ? ['#3A3530', '#2C2416', '#3A3530']
-                  : [colors.accentDeep, colors.accent, colors.borderStrong, colors.accent, colors.accentDeep]
-              }
-              style={styles.shutterOuter}
-            >
-              <View style={styles.shutterInner} />
-            </LinearGradient>
+            <Text style={styles.flashIcon}>{flashOn ? 'â˜…' : 'âš¡'}</Text>
           </TouchableOpacity>
 
-          {/* Flash toggle */}
-          <TouchableOpacity style={styles.flashToggle} onPress={() => setFlashOn((f) => !f)}>
-            <Text style={styles.flashIcon}>{flashOn ? '★F' : 'F'}</Text>
-          </TouchableOpacity>
+          {captureState === 'idle' && (
+            <TouchableOpacity style={styles.startBtn} onPress={handleStartScanning}>
+              <Text style={styles.startBtnText}>START SCANNING</Text>
+            </TouchableOpacity>
+          )}
+
+          {captureState === 'loop_active' && (
+            <TouchableOpacity style={styles.stopBtn} onPress={handleStopScanning}>
+              <Text style={styles.stopBtnText}>â–   STOP</Text>
+            </TouchableOpacity>
+          )}
+
+          {(captureState === 'analysing' || captureState === 'lock_on') && (
+            <View style={[
+              styles.statusPill,
+              captureState === 'lock_on' && styles.statusPillLocked,
+            ]}>
+              <Text style={[
+                styles.statusPillText,
+                captureState === 'lock_on' && { color: colors.success },
+              ]}>
+                {captureState === 'lock_on' ? 'LOCKED ON â—†' : 'ANALYSING...'}
+              </Text>
+            </View>
+          )}
+
+          {/* Spacer to balance flash toggle */}
+          <View style={{ width: 44 }} />
         </View>
       )}
 
-      {/* ── Result card ─────────────────────────────────────────── */}
+      {/* â”€â”€ Inline toast â€” above control panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      <InlineToast message={toastMessage} visible={toastVisible} />
+
+      {/* â”€â”€ Result card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <Animated.View style={[styles.resultCard, resultStyle]}>
         <View style={styles.resultHandle} />
 
-        <Text style={styles.captureConfirm}>CAPTURE CONFIRMED ✓</Text>
+        <Text style={styles.captureConfirm}>CAPTURE CONFIRMED âœ“</Text>
 
         <View style={styles.resultImageRow}>
           <Image
-            source={{ uri: MOCK_RESULT.photoUrl }}
+            source={{ uri: capturedPhotoUri ?? captured?.photoUrl }}
             style={styles.resultThumb}
             contentFit="cover"
           />
           <View style={styles.resultInfo}>
-            <Text style={styles.resultSpecies}>{MOCK_RESULT.species}</Text>
-            {MOCK_RESULT.breed && (
-              <Text style={styles.resultBreed}>{MOCK_RESULT.breed}</Text>
+            <Text style={styles.resultSpecies}>{captured?.species ?? 'â€”'}</Text>
+            {captured?.breed && (
+              <Text style={styles.resultBreed}>{captured.breed}</Text>
             )}
             <Text style={styles.resultConfidence}>
-              {Math.round(MOCK_RESULT.confidenceScore * 100)}% MATCH
+              {Math.round((captured?.confidenceScore ?? 0) * 100)}% MATCH
             </Text>
           </View>
         </View>
 
         <View style={styles.resultTags}>
-          {MOCK_RESULT.types.map((t) => (
+          {captured?.types.map((t) => (
             <TypeTagChip key={t} type={t} size="sm" />
           ))}
         </View>
 
         <View style={styles.resultRarity}>
-          <RarityBadge rarity={MOCK_RESULT.rarity} />
-          <Text style={[styles.resultRegion, { color: colors.accentDeep }]}>◉ {MOCK_RESULT.region}</Text>
+          {captured && <RarityBadge rarity={captured.rarity} />}
+          {captured?.region && (
+            <Text style={styles.resultRegion}>â—‰ {captured.region}</Text>
+          )}
         </View>
 
         <View style={styles.resultActions}>
-          <TouchableOpacity style={styles.retryBtn} onPress={handleRetry}>
-            <Text style={styles.retryBtnText}>RETRY</Text>
+          <TouchableOpacity style={styles.viewCollectionBtn} onPress={handleViewCollection}>
+            <Text style={styles.viewCollectionBtnText}>VIEW COLLECTION</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.addBtn} onPress={handleAdd}>
-            <Text style={styles.addBtnText}>ADD TO ANÍLOG</Text>
-          </TouchableOpacity>
+          <View style={styles.resultActionsRow}>
+            <TouchableOpacity style={styles.retryBtn} onPress={handleClose}>
+              <Text style={styles.retryBtnText}>RELEASE</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.addBtn} onPress={handleScanAgain}>
+              <Text style={styles.addBtnText}>SCAN AGAIN</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Animated.View>
+
+      {/* â”€â”€ Scan Limit Overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {scanLimitReached && (
+        <View style={styles.scanLimitOverlay}>
+          <Text style={styles.scanLimitTitle}>Daily Limit Reached</Text>
+          <Text style={styles.scanLimitBody}>
+            You've used all {FREE_SCAN_LIMIT} scans for today.
+          </Text>
+          <View style={styles.scanLimitActions}>
+            <TouchableOpacity style={styles.scanLimitSecondary} onPress={() => router.back()}>
+              <Text style={styles.scanLimitSecondaryText}>Remind Me Tomorrow</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.scanLimitPrimary} onPress={() => router.back()}>
+              <Text style={styles.scanLimitPrimaryText}>Go Premium</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* â”€â”€ Achievement Unlock Toast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {pendingAchievement && (
+        <AchievementUnlockToast
+          achievement={pendingAchievement}
+          visible={pendingAchievement !== null}
+          onHide={clearPendingAchievement}
+        />
+      )}
     </View>
   );
 }
+
+// â”€â”€â”€ Styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const styles = StyleSheet.create({
   container: {
@@ -262,7 +638,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.overlayDark,
   },
 
-  // Reticle
+  // â”€â”€ Reticle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   reticleWrap: {
     flex: 1,
     alignItems: 'center',
@@ -278,6 +654,13 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.text3,
   },
+  lockOnGlow: {
+    position: 'absolute',
+    width: RETICLE_SIZE + 12,
+    height: RETICLE_SIZE + 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+  },
   reticle: {
     width: RETICLE_SIZE,
     height: RETICLE_SIZE,
@@ -287,7 +670,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: CORNER,
     height: CORNER,
-    borderColor: colors.text3,
+    borderColor: '#FFFFFF',
   },
   cornerTL: {
     top: 0, left: 0,
@@ -315,20 +698,16 @@ const styles = StyleSheet.create({
   },
   scanLineClip: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    top: 0, left: 0, right: 0, bottom: 0,
     overflow: 'hidden',
   },
   scanLine: {
     position: 'absolute',
-    left: 0,
-    right: 0,
+    left: 0, right: 0,
     height: 2,
-    backgroundColor: colors.text3,
+    backgroundColor: '#FFFFFF',
     opacity: 0.75,
-    shadowColor: colors.text3,
+    shadowColor: '#FFFFFF',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.80,
     shadowRadius: 6,
@@ -337,36 +716,34 @@ const styles = StyleSheet.create({
   statusText: {
     fontFamily: typography.fontFamily.mono,
     fontSize: 13,
-    color: colors.accent,
+    color: '#FFFFFF',
     letterSpacing: 2,
   },
 
-  // Top bar
+  // â”€â”€ Top bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   topBar: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: colors.bezel,
+    top: 0, left: 0, right: 0,
+    backgroundColor: 'rgba(0,0,0,0.65)',
     paddingTop: 52,
     paddingBottom: 12,
     paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderStrong,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
   },
   closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   closeIcon: {
     color: colors.textInverse,
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: typography.fontFamily.bodyBold,
   },
   topLabel: {
@@ -377,86 +754,136 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 2,
   },
-  modeToggle: {
-    flexDirection: 'row',
-    gap: 8,
+  scanBadge: {
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
   },
-  modeActive: {
+  scanBadgeText: {
     fontFamily: typography.fontFamily.monoBold,
     fontSize: 11,
-    color: colors.accent,
-    letterSpacing: 1,
-  },
-  modeInactive: {
-    fontFamily: typography.fontFamily.mono,
-    fontSize: 11,
-    color: colors.text3,
-    letterSpacing: 1,
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
 
-  // Shutter panel
-  shutterPanel: {
+  // â”€â”€ Control panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  controlPanel: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: colors.bezel,
+    bottom: 0, left: 0, right: 0,
+    backgroundColor: colors.bg,
     borderTopWidth: 1,
-    borderTopColor: colors.borderStrong,
+    borderTopColor: colors.border,
     paddingVertical: 24,
-    paddingHorizontal: 40,
+    paddingHorizontal: 28,
+    paddingBottom: 44,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBottom: 44,
-  },
-  galleryThumb: {
-    width: 48,
-    height: 48,
-    borderRadius: 10,
-    backgroundColor: colors.borderStrong,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  shutterOuter: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.text3,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.55,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  shutterInner: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(244,225,176,0.15)',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.20)',
   },
   flashToggle: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     borderRadius: 10,
-    backgroundColor: colors.borderStrong,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.border,
   },
-  flashIcon: { fontSize: 20 },
+  flashIcon: {
+    fontSize: 18,
+    color: colors.text1,
+  },
+  startBtn: {
+    flex: 1,
+    marginHorizontal: 16,
+    backgroundColor: colors.accent,
+    borderRadius: 14,
+    paddingVertical: 16,
+    minHeight: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.accent,
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  startBtnText: {
+    fontFamily: typography.fontFamily.monoBold,
+    fontSize: 13,
+    color: colors.textInverse,
+    letterSpacing: 1.5,
+  },
+  stopBtn: {
+    flex: 1,
+    marginHorizontal: 16,
+    backgroundColor: colors.bg,
+    borderWidth: 1.5,
+    borderColor: colors.error,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stopBtnText: {
+    fontFamily: typography.fontFamily.monoBold,
+    fontSize: 13,
+    color: colors.error,
+    letterSpacing: 1.5,
+  },
+  statusPill: {
+    flex: 1,
+    marginHorizontal: 16,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  statusPillLocked: {
+    borderColor: colors.success,
+    backgroundColor: 'rgba(22,163,74,0.15)',
+  },
+  statusPillText: {
+    fontFamily: typography.fontFamily.monoBold,
+    fontSize: 12,
+    color: '#FFFFFF',
+    letterSpacing: 1.5,
+  },
 
-  // Result card
+  // â”€â”€ Inline toast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  inlineToast: {
+    position: 'absolute',
+    bottom: 140,
+    left: 24,
+    right: 24,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+  },
+  inlineToastText: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.fontSize.sm,
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+
+  // â”€â”€ Result card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   resultCard: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: colors.surface2,
+    bottom: 0, left: 0, right: 0,
+    backgroundColor: colors.bg,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     padding: 24,
@@ -479,7 +906,7 @@ const styles = StyleSheet.create({
   captureConfirm: {
     fontFamily: typography.fontFamily.monoBold,
     fontSize: 13,
-    color: colors.success,
+    color: colors.accent,
     letterSpacing: 1.5,
     textAlign: 'center',
   },
@@ -498,19 +925,20 @@ const styles = StyleSheet.create({
   resultInfo: { flex: 1, gap: 4 },
   resultSpecies: {
     fontFamily: typography.fontFamily.bodyBold,
-    fontSize: typography.fontSize['2xl'],
+    fontSize: typography.fontSize.xl,
     color: colors.text1,
-    lineHeight: typography.fontSize['2xl'] * 1.12,
+    lineHeight: typography.fontSize.xl * 1.12,
   },
   resultBreed: {
     fontFamily: typography.fontFamily.body,
     fontSize: typography.fontSize.sm,
     color: colors.text2,
+    fontStyle: 'italic',
   },
   resultConfidence: {
     fontFamily: typography.fontFamily.mono,
     fontSize: typography.fontSize.xs,
-    color: colors.accent,
+    color: colors.text3,
     letterSpacing: 1,
   },
   resultTags: {
@@ -529,12 +957,29 @@ const styles = StyleSheet.create({
     color: colors.text2,
   },
   resultActions: {
+    flexDirection: 'column',
+    gap: 10,
+    paddingBottom: 8,
+  },
+  viewCollectionBtn: {
+    backgroundColor: colors.accent,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  viewCollectionBtnText: {
+    fontFamily: typography.fontFamily.monoBold,
+    fontSize: 13,
+    color: colors.textInverse,
+    letterSpacing: 1,
+  },
+  resultActionsRow: {
     flexDirection: 'row',
     gap: 12,
-    paddingBottom: 8,
   },
   retryBtn: {
     flex: 1,
+    backgroundColor: colors.surface,
     borderWidth: 1.5,
     borderColor: colors.border,
     borderRadius: 14,
@@ -549,22 +994,161 @@ const styles = StyleSheet.create({
   },
   addBtn: {
     flex: 2,
-    backgroundColor: colors.navDark,
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.borderStrong,
+  },
+  addBtnText: {
+    fontFamily: typography.fontFamily.monoBold,
+    fontSize: 13,
+    color: colors.text1,
+    letterSpacing: 1,
+  },
+
+  // â”€â”€ Scan limit overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  scanLimitOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+    gap: 12,
+  },
+  scanLimitTitle: {
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: typography.fontSize['2xl'],
+    color: colors.text1,
+    textAlign: 'center',
+  },
+  scanLimitBody: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.fontSize.base,
+    color: colors.text2,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  scanLimitActions: {
+    width: '100%',
+    gap: 10,
+  },
+  scanLimitSecondary: {
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  scanLimitSecondaryText: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: 13,
+    color: colors.text2,
+    letterSpacing: 1,
+  },
+  scanLimitPrimary: {
+    backgroundColor: colors.accent,
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.text3,
-    shadowColor: colors.text3,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.40,
-    shadowRadius: 8,
-    elevation: 7,
+    borderColor: colors.accentDeep,
   },
-  addBtnText: {
+  scanLimitPrimaryText: {
     fontFamily: typography.fontFamily.monoBold,
     fontSize: 13,
     color: colors.textInverse,
     letterSpacing: 1,
   },
+
+  // ── Email verification gate ────────────────────────────────────────────────
+  emailGateContainer: {
+    flex: 1,
+    backgroundColor: colors.bg,
+    paddingHorizontal: 16,
+    paddingTop: 56,
+  },
+  emailGateBack: {
+    alignSelf: 'flex-start',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    marginBottom: 8,
+  },
+  emailGateBackText: {
+    fontFamily: typography.fontFamily.bodyMedium,
+    fontSize: typography.fontSize.base,
+    color: colors.accent,
+  },
+  emailGateContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 60,
+  },
+  emailGateIcon: {
+    fontSize: 56,
+    marginBottom: 8,
+  },
+  emailGateHeadline: {
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: typography.fontSize['2xl'],
+    color: colors.text1,
+    textAlign: 'center',
+  },
+  emailGateBody: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.fontSize.base,
+    color: colors.text2,
+    textAlign: 'center',
+    lineHeight: typography.fontSize.base * typography.lineHeight.normal,
+    marginTop: 4,
+  },
+  emailGateEmail: {
+    fontFamily: typography.fontFamily.bodyMedium,
+    fontSize: typography.fontSize.sm,
+    color: colors.text2,
+    textAlign: 'center',
+  },
+  emailGateResendBtn: {
+    marginTop: 8,
+    width: '100%',
+    backgroundColor: colors.accent,
+    borderRadius: 14,
+    paddingVertical: 16,
+    minHeight: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  emailGateResendBtnDisabled: {
+    backgroundColor: colors.surface2,
+    borderColor: colors.border,
+  },
+  emailGateResendBtnSent: {
+    backgroundColor: colors.success,
+    borderColor: colors.success,
+  },
+  emailGateResendBtnText: {
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: typography.fontSize.base,
+    color: colors.textInverse,
+  },
+  emailGateResendError: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.fontSize.sm,
+    color: colors.error,
+    textAlign: 'center',
+  },
+  emailGateHint: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.fontSize.xs,
+    color: colors.text3,
+    textAlign: 'center',
+    marginTop: 16,
+  },
 });
+

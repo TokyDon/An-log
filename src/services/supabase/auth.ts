@@ -25,12 +25,20 @@ export async function signOut() {
 }
 
 export async function getCurrentUser() {
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.user ?? null;
 }
 
 export function onAuthStateChange(
   callback: (event: string, session: unknown) => void,
 ) {
   return supabase.auth.onAuthStateChange(callback);
+}
+
+export async function resendVerificationEmail(email: string) {
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email,
+  });
+  if (error) throw error;
 }
