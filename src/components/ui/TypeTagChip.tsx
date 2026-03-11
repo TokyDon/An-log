@@ -52,15 +52,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chipSm: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  chipMd: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 9,
     paddingVertical: 3,
   },
+  chipMd: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
   label: {
-    fontFamily: typography.fontFamily.bodySemiBold,
+    fontFamily: typography.fontFamily.bodyBold,
     letterSpacing: typography.letterSpacing.label,
   },
   labelSm: { fontSize: typography.fontSize.xs },

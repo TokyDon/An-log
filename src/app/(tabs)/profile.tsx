@@ -95,12 +95,9 @@ export default function ProfileScreen() {
       >
         {/* ── Hero zone ─────────────────────────────────────────── */}
         <View style={styles.heroZone}>
-          <View
-            style={[
-              styles.heroOverlay,
-              { backgroundColor: colors.overlayDark },
-            ]}
-          />
+          <View style={styles.heroOverlay} />
+          <View style={styles.heroDecorRing} />
+          <View style={styles.heroDecorRingInner} />
           {/* Avatar */}
           <View style={styles.avatarRing}>
             <View style={styles.avatar}>
@@ -238,42 +235,65 @@ const styles = StyleSheet.create({
 
   // Hero zone
   heroZone: {
-    height: 210,
+    height: 230,
     backgroundColor: colors.surfaceDark,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingBottom: 24,
+    paddingBottom: 28,
     marginBottom: 0,
     position: 'relative',
+    overflow: 'hidden',
   },
   heroOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+  },
+  // Decorative ring in hero
+  heroDecorRing: {
+    position: 'absolute',
+    top: -60,
+    right: -60,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    borderWidth: 36,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  heroDecorRingInner: {
+    position: 'absolute',
+    top: 20,
+    left: -40,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderWidth: 20,
+    borderColor: 'rgba(255,255,255,0.04)',
   },
   avatarRing: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    borderWidth: 3,
+    borderColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.60,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  avatar: {
     width: 84,
     height: 84,
     borderRadius: 42,
-    borderWidth: 3,
-    borderColor: colors.borderStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-    shadowColor: colors.borderStrong,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.55,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  avatar: {
-    width: 74,
-    height: 74,
-    borderRadius: 37,
     backgroundColor: colors.bezel,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarInitials: {
-    fontFamily: typography.fontFamily.bodyBold,
+    fontFamily: typography.fontFamily.heading,
     fontSize: typography.fontSize.xl,
     color: colors.accent,
   },
@@ -281,11 +301,12 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.heading,
     fontSize: typography.fontSize['2xl'],
     color: colors.textInverse,
+    lineHeight: typography.fontSize['2xl'] * typography.lineHeight.tight,
   },
   memberSince: {
-    fontFamily: typography.fontFamily.mono,
+    fontFamily: typography.fontFamily.bodyBold,
     fontSize: typography.fontSize.xs,
-    color: 'rgba(255,255,255,0.87)',
+    color: 'rgba(255,255,255,0.65)',
     marginTop: 4,
     letterSpacing: typography.letterSpacing.wide,
   },
@@ -307,34 +328,37 @@ const styles = StyleSheet.create({
   // Stat strip
   statStrip: {
     flexDirection: 'row',
-    backgroundColor: colors.surface2,
+    backgroundColor: colors.surface,
     marginHorizontal: 16,
     marginTop: -1,
-    borderRadius: 3,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
     marginBottom: 24,
+    shadowColor: colors.text1,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   statPanel: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: 16,
   },
   statDivider: {
     width: 1,
     backgroundColor: colors.border,
-    marginVertical: 10,
+    marginVertical: 12,
   },
   statValue: {
-    fontFamily: typography.fontFamily.bodyBold,
+    fontFamily: typography.fontFamily.heading,
     fontSize: typography.fontSize['2xl'],
     color: colors.text1,
-    lineHeight: typography.fontSize['2xl'] * 1.1,
+    lineHeight: typography.fontSize['2xl'] * typography.lineHeight.tight,
   },
   statLabel: {
-    fontFamily: typography.fontFamily.mono,
+    fontFamily: typography.fontFamily.bodyBold,
     fontSize: typography.fontSize.xs,
     color: colors.text3,
     marginTop: 4,
@@ -347,7 +371,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontFamily: typography.fontFamily.mono,
+    fontFamily: typography.fontFamily.bodyBold,
     fontSize: typography.fontSize.xs,
     color: colors.text3,
     letterSpacing: typography.letterSpacing.widest,
@@ -361,25 +385,26 @@ const styles = StyleSheet.create({
   },
   rarityBar: {
     flexDirection: 'row',
-    height: 16,
-    borderRadius: 8,
+    height: 14,
+    borderRadius: 7,
     overflow: 'hidden',
     gap: 2,
+    backgroundColor: colors.surface2,
   },
   raritySegment: {
-    height: 16,
+    height: 14,
     borderRadius: 4,
   },
   rarityLegend: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
-    marginTop: 10,
+    marginTop: 12,
   },
   rarityLegendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
   },
   rarityDot: {
     width: 8,
@@ -387,7 +412,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   rarityLegendText: {
-    fontFamily: typography.fontFamily.mono,
+    fontFamily: typography.fontFamily.bodyBold,
     fontSize: typography.fontSize.xs,
     color: colors.text2,
     letterSpacing: typography.letterSpacing.label,

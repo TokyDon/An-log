@@ -1,8 +1,14 @@
 /**
- * Milestones Tab — Naturalist Field Journal v2
+ * Logbook Tab — v3 Flutter-style
  *
- * Dark forestFloor header, parchment gauge panel, cardStock rarity cells,
- * parchment achievement cards with tier accent stripes.
+ * Milestones & achievements with vivid rarity cells, proper locked/unlocked
+ * achievement cards, and a prominent progress gauge.
+ *
+ * Accessibility:
+ *   - Locked achievements NOT dimmed with opacity (would fail WCAG 1.4.3)
+ *     Instead: grey icon circle, muted text, explicit "Locked" label
+ *   - Section headers use ≥ 12px text
+ *   - Touch targets n/a (read-only display)
  */
 
 import React from 'react';
@@ -15,45 +21,312 @@ import { useCollection } from '../../features/collection/useCollection';
 import { useCollectionStore } from '../../store/collectionStore';
 import { useAchievementStore } from '../../store/achievementStore';
 import { ACHIEVEMENTS } from '../../constants/achievements';
+import type { AnimonRarity } from '../../types/animon';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: W } = Dimensions.get('window');
 const TOTAL_SPECIES_TARGET = 100;
 
+// Convert hex to rgba for tinted backgrounds
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 const TIER_COLORS: Record<string, string> = {
-  Bronze:   colors.text3,
-  Silver:   colors.text2,
-  Gold:     colors.rarity.uncommon.bg,
-  Platinum: '#E5E4E2',
+  Bronze:   '#CD7F32',
+  Silver:   '#8E9BAE',
+  Gold:     colors.gold,
+  Platinum: '#9BB8D4',
   Diamond:  colors.rarity.rare.bg,
 };
 
-function SectionRule({ label }: { label: string }) {
+// ── Section divider ──────────────────────────────────────────────────────────
+
+function SectionLabel({ label }: { label: string }) {
   return (
-    <View style={sectionRuleStyles.wrap}>
-      <View style={sectionRuleStyles.line} />
-      <Text style={sectionRuleStyles.label}>{label}</Text>
-      <View style={sectionRuleStyles.line} />
+    <View style={section.wrap}>
+      <View style={section.line} />
+      <Text style={section.text}>{label}</Text>
+      <View style={section.line} />
     </View>
   );
 }
 
-const sectionRuleStyles = StyleSheet.create({
+const section = StyleSheet.create({
   wrap: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 14,
     gap: 10,
   },
   line: { flex: 1, height: 1, backgroundColor: colors.border },
-  label: {
-    fontFamily: typography.fontFamily.mono,
+  text: {
+    fontFamily: typography.fontFamily.bodyBold,
     fontSize: typography.fontSize.xs,
     color: colors.text3,
     letterSpacing: typography.letterSpacing.widest,
-    textTransform: 'uppercase',
   },
 });
+
+// ── Rarity cell ──────────────────────────────────────────────────────────────
+
+function RarityCell({
+  rarity,
+  label,
+  count,
+  target,
+}: {
+  rarity: AnimonRarity;
+  label: string;
+  count: number;
+  target: number;
+}) {
+  const bg   = colors.rarity[rarity].bg;
+  const pct  = Math.min(count / target, 1);
+
+  return (
+    <View
+      style={[
+        rarityCell.card,
+        {
+          backgroundColor: hexToRgba(bg, 0.12),
+          borderColor:      hexToRgba(bg, 0.35),
+        },
+      ]}
+      accessible
+      accessibilityLabel={`${label}: ${count} of ${target}`}
+    >
+      <RarityBadge rarity={rarity} />
+      <Text style={rarityCell.count}>{count}</Text>
+      <Text style={rarityCell.of}>OF {target}</Text>
+      {/* Mini progress bar */}
+      <View style={rarityCell.barTrack}>
+        <View
+          style={[
+            rarityCell.barFill,
+            { width: `${pct * 100}%` as any, backgroundColor: bg },
+          ]}
+        />
+      </View>
+    </View>
+  );
+}
+
+const rarityCell = StyleSheet.create({
+  card: {
+    flex: 1,
+    minWidth: (W - 52) / 2,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    padding: 16,
+    alignItems: 'center',
+    gap: 4,
+  },
+  count: {
+    fontFamily: typography.fontFamily.heading,
+    fontSize: typography.fontSize['2xl'],
+    color: colors.text1,
+    marginTop: 6,
+    lineHeight: typography.fontSize['2xl'] * typography.lineHeight.tight,
+  },
+  of: {
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: typography.fontSize.xs,
+    color: colors.text3,
+    letterSpacing: typography.letterSpacing.wide,
+  },
+  barTrack: {
+    width: '100%',
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.surface2,
+    overflow: 'hidden',
+    marginTop: 8,
+  },
+  barFill: {
+    height: 4,
+    borderRadius: 2,
+  },
+});
+
+// ── Achievement card ─────────────────────────────────────────────────────────
+
+function AchievementCard({
+  title,
+  description,
+  emoji,
+  tier,
+  unlocked,
+}: {
+  title: string;
+  description: string;
+  emoji: string;
+  tier: string;
+  unlocked: boolean;
+}) {
+  const accentColor = TIER_COLORS[tier] ?? colors.text3;
+
+  return (
+    <View
+      style={[
+        achieve.card,
+        unlocked
+          ? { borderColor: hexToRgba(accentColor, 0.40) }
+          : achieve.cardLocked,
+      ]}
+      accessible
+      accessibilityLabel={`${title}: ${description}. ${unlocked ? 'Unlocked' : 'Locked'}`}
+    >
+      {/* Icon circle */}
+      <View
+        style={[
+          achieve.iconCircle,
+          {
+            backgroundColor: unlocked
+              ? hexToRgba(accentColor, 0.15)
+              : colors.surface2,
+            borderColor: unlocked
+              ? hexToRgba(accentColor, 0.40)
+              : colors.border,
+          },
+        ]}
+      >
+        <Text style={[achieve.emoji, !unlocked && achieve.emojiLocked]}>
+          {emoji}
+        </Text>
+      </View>
+
+      {/* Text */}
+      <View style={achieve.textBlock}>
+        <View style={achieve.titleRow}>
+          <Text style={[achieve.title, !unlocked && achieve.textMuted]}>
+            {title}
+          </Text>
+          {/* Tier badge */}
+          <View
+            style={[
+              achieve.tierBadge,
+              { backgroundColor: unlocked ? hexToRgba(accentColor, 0.15) : colors.surface2 },
+            ]}
+          >
+            <Text
+              style={[
+                achieve.tierLabel,
+                { color: unlocked ? accentColor : colors.text3 },
+              ]}
+            >
+              {tier.toUpperCase()}
+            </Text>
+          </View>
+        </View>
+        <Text style={achieve.desc}>{description}</Text>
+      </View>
+
+      {/* Status indicator */}
+      {unlocked ? (
+        <View style={[achieve.statusDot, { backgroundColor: colors.accent }]}>
+          <Text style={achieve.statusCheck}>✓</Text>
+        </View>
+      ) : (
+        <View style={[achieve.statusDot, achieve.statusLocked]}>
+          <Text style={achieve.statusLockIcon}>○</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+const achieve = StyleSheet.create({
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    padding: 14,
+    gap: 12,
+  },
+  cardLocked: {
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  iconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  emoji: {
+    fontSize: 22,
+  },
+  emojiLocked: {
+    opacity: 0.35,
+  },
+  textBlock: { flex: 1, gap: 3 },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  title: {
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: typography.fontSize.base,
+    color: colors.text1,
+    flexShrink: 1,
+  },
+  textMuted: {
+    color: colors.text3,
+  },
+  tierBadge: {
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  tierLabel: {
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: 10,
+    letterSpacing: 0.5,
+  },
+  desc: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.fontSize.sm,
+    color: colors.text3,
+    lineHeight: typography.fontSize.sm * typography.lineHeight.normal,
+  },
+  statusDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  statusLocked: {
+    backgroundColor: colors.surface2,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  statusCheck: {
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: 13,
+    color: colors.textInverse,
+  },
+  statusLockIcon: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: 14,
+    color: colors.text3,
+  },
+});
+
+// ── Screen ───────────────────────────────────────────────────────────────────
 
 export default function MilestonesScreen() {
   const localAnimons = useCollectionStore((s) => s.animons);
@@ -65,18 +338,15 @@ export default function MilestonesScreen() {
   const isUnlocked = useAchievementStore((s) => s.isUnlocked);
 
   const uniqueSpecies = new Set(animons.map((a) => a.species)).size;
-  const progressPct = Math.min(uniqueSpecies / TOTAL_SPECIES_TARGET, 1);
+  const progressPct   = Math.min(uniqueSpecies / TOTAL_SPECIES_TARGET, 1);
 
-  const rarityData = [
-    { rarity: 'common'   as const, label: 'Common',   count: animons.filter((a) => a.rarity === 'common').length,   target: 20 },
-    { rarity: 'uncommon' as const, label: 'Uncommon', count: animons.filter((a) => a.rarity === 'uncommon').length, target: 10 },
-    { rarity: 'rare'     as const, label: 'Rare',     count: animons.filter((a) => a.rarity === 'rare').length,     target: 5  },
-    { rarity: 'glossy'   as const, label: 'Glossy',   count: animons.filter((a) => a.rarity === 'glossy').length,   target: 1  },
+  const rarityRows: Array<{ rarity: AnimonRarity; label: string; target: number }> = [
+    { rarity: 'common',   label: 'Common',   target: 20 },
+    { rarity: 'uncommon', label: 'Uncommon', target: 10 },
+    { rarity: 'rare',     label: 'Rare',     target: 5  },
+    { rarity: 'glossy',   label: 'Glossy',   target: 1  },
   ];
 
-  const uniqueRegions = new Set(animons.map((a) => a.region).filter(Boolean)).size;
-
-  // Map ACHIEVEMENTS constant to display objects with live unlocked state
   const achievements = ACHIEVEMENTS.map((a) => ({
     ...a,
     unlocked: isUnlocked(a.id),
@@ -88,83 +358,62 @@ export default function MilestonesScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Dark header ── */}
+        {/* ── Header ──────────────────────────────────────────────────── */}
         <View style={styles.header}>
           <View>
             <Text style={styles.wordmark}>ANÍLOG</Text>
             <Text style={styles.screenTitle}>Milestones.</Text>
           </View>
-          <View style={styles.specimenBadge}>
-            <Text style={styles.specimenBadgeText}>
-              {uniqueSpecies}/{TOTAL_SPECIES_TARGET} SPECIES
-            </Text>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{uniqueSpecies}/{TOTAL_SPECIES_TARGET}</Text>
           </View>
         </View>
 
-        {/* ── Species progress gauge ── */}
-        <View style={styles.gaugePanel}>
+        {/* ── Species progress ────────────────────────────────────────── */}
+        <View style={styles.gaugeCard}>
           <View style={styles.gaugeLabelRow}>
-            <Text style={styles.gaugeLabel}>ANÍMON COLLECTOR</Text>
-            <Text style={styles.gaugeFraction}>{uniqueSpecies} / {TOTAL_SPECIES_TARGET}</Text>
+            <View>
+              <Text style={styles.gaugeTitle}>ANÍMON COLLECTOR</Text>
+              <Text style={styles.gaugeSubtitle}>Discover all known species</Text>
+            </View>
+            <Text style={styles.gaugeFraction}>
+              <Text style={styles.gaugeFractionBig}>{uniqueSpecies}</Text>
+              <Text style={styles.gaugeFractionDim}>/{TOTAL_SPECIES_TARGET}</Text>
+            </Text>
           </View>
           <View style={styles.gaugeTrack}>
             <View style={[styles.gaugeFill, { width: `${progressPct * 100}%` as any }]} />
           </View>
-          <Text style={styles.gaugePct}>{Math.round(progressPct * 100)}% COMPLETE</Text>
+          <Text style={styles.gaugePct}>{Math.round(progressPct * 100)}% complete</Text>
         </View>
 
-        {/* ── Rarity breakdown grid ── */}
-        <SectionRule label="RARITY COLLECTION" />
+        {/* ── Rarity breakdown ─────────────────────────────────────────── */}
+        <SectionLabel label="RARITY COLLECTION" />
         <View style={styles.rarityGrid}>
-          {rarityData.map((r) => (
-            <View key={r.rarity} style={styles.rarityCell}>
-              <RarityBadge rarity={r.rarity} />
-              <Text style={styles.rarityCount}>
-                {r.count}
-              </Text>
-              <Text style={styles.rarityLabel}>SPECIMENS</Text>
-            </View>
+          {rarityRows.map((r) => (
+            <RarityCell
+              key={r.rarity}
+              rarity={r.rarity}
+              label={r.label}
+              count={animons.filter((a) => a.rarity === r.rarity).length}
+              target={r.target}
+            />
           ))}
         </View>
 
-        {/* ── Achievement cards ── */}
-        <View style={{ marginTop: 8 }}>
-          <SectionRule label="ACHIEVEMENTS" />
-        </View>
-        <View style={styles.achievementList}>
-          {achievements.map((a) => {
-            const accentColor = TIER_COLORS[a.tier];
-            return (
-              <View
-                key={a.id}
-                style={[
-                  styles.achievementCard,
-                  !a.unlocked && styles.achievementLocked,
-                ]}
-              >
-                {/* Left accent stripe */}
-                <View
-                  style={[
-                    styles.achievementStripe,
-                    { backgroundColor: a.unlocked ? accentColor : colors.text3 },
-                  ]}
-                />
-                {/* Content */}
-                <Text style={styles.achievementSymbol}>{a.unlocked ? '◆' : '◇'}</Text>
-                <View style={styles.achievementText}>
-                  <Text style={[styles.achievementTitle, !a.unlocked && styles.dimText]}>
-                    {a.title}
-                  </Text>
-                  <Text style={styles.achievementDesc}>{a.description}</Text>
-                </View>
-                {a.unlocked && (
-                  <View style={styles.checkmark}>
-                    <Text style={styles.checkmarkText}>✓</Text>
-                  </View>
-                )}
-              </View>
-            );
-          })}
+        {/* ── Achievements ─────────────────────────────────────────────── */}
+        <SectionLabel label="ACHIEVEMENTS" />
+        <View style={styles.achieveList}>
+          {achievements.map((a) => (
+            <AchievementCard
+              key={a.id}
+              title={a.title}
+              description={a.description}
+              emoji={a.emoji}
+              tier={a.tier}
+              unlocked={a.unlocked}
+            />
+          ))}
         </View>
 
         <View style={{ height: 32 }} />
@@ -173,31 +422,29 @@ export default function MilestonesScreen() {
   );
 }
 
+// ── Screen styles ─────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
+  safeArea: { flex: 1, backgroundColor: colors.bg },
   scrollContent: { paddingBottom: 16 },
 
-  // Light header — matches Party and Collection tabs
   header: {
     backgroundColor: colors.bg,
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 22,
+    paddingBottom: 20,
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    marginBottom: 20,
   },
   wordmark: {
-    fontFamily: typography.fontFamily.mono,
-    fontSize: typography.fontSize.sm,
-    color: colors.text3,
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: typography.fontSize.xs,
     letterSpacing: typography.letterSpacing.widest,
-    textTransform: 'uppercase',
+    color: colors.text3,
     marginBottom: 4,
   },
   screenTitle: {
@@ -206,160 +453,101 @@ const styles = StyleSheet.create({
     color: colors.text1,
     lineHeight: typography.fontSize.xl * typography.lineHeight.tight,
   },
-  specimenBadge: {
-    backgroundColor: colors.surface2,
+  badge: {
+    backgroundColor: colors.accentSoft,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 3,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    borderColor: hexToRgba(colors.accent, 0.25),
   },
-  specimenBadgeText: {
-    fontFamily: typography.fontFamily.mono,
-    fontSize: typography.fontSize.xs,
-    color: colors.text2,
+  badgeText: {
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: typography.fontSize.sm,
+    color: colors.accent,
     letterSpacing: typography.letterSpacing.label,
   },
 
-  // Progress gauge
-  gaugePanel: {
+  // Gauge card
+  gaugeCard: {
     marginHorizontal: 16,
     marginBottom: 24,
     backgroundColor: colors.surface,
-    borderRadius: 4,
-    padding: 16,
+    borderRadius: 16,
+    padding: 18,
     borderWidth: 1,
     borderColor: colors.border,
+    shadowColor: colors.text1,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   gaugeLabelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    alignItems: 'flex-start',
+    marginBottom: 14,
   },
-  gaugeLabel: {
-    fontFamily: typography.fontFamily.mono,
+  gaugeTitle: {
+    fontFamily: typography.fontFamily.bodyBold,
     fontSize: typography.fontSize.xs,
     color: colors.text3,
     letterSpacing: typography.letterSpacing.widest,
-    textTransform: 'uppercase',
+    marginBottom: 3,
   },
-  gaugeFraction: {
-    fontFamily: typography.fontFamily.mono,
-    fontSize: typography.fontSize.sm,
-    color: colors.text2,
-  },
-  gaugeTrack: {
-    height: 8,
-    borderRadius: 2,
-    backgroundColor: colors.surface2,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  gaugeFill: {
-    height: 8,
-    borderRadius: 2,
-    backgroundColor: colors.accent,
-  },
-  gaugePct: {
-    fontFamily: typography.fontFamily.mono,
-    fontSize: typography.fontSize.xs,
-    color: colors.text3,
-    marginTop: 8,
-    textAlign: 'right',
-    letterSpacing: typography.letterSpacing.wide,
-  },
-
-  // Rarity grid — cardStock cells
-  rarityGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    paddingHorizontal: 16,
-    marginBottom: 24,
-  },
-  rarityCell: {
-    flex: 1,
-    minWidth: (SCREEN_WIDTH - 52) / 2,
-    backgroundColor: colors.surface2,
-    borderRadius: 3,
-    padding: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  rarityCount: {
-    fontFamily: typography.fontFamily.bodyBold,
-    fontSize: typography.fontSize['3xl'],
-    color: colors.text1,
-    marginTop: 8,
-  },
-  rarityLabel: {
-    fontFamily: typography.fontFamily.mono,
-    fontSize: typography.fontSize.xs,
-    textTransform: 'uppercase',
-    color: colors.text3,
-    marginTop: 4,
-    letterSpacing: 1,
-  },
-
-  // Achievement cards — parchment
-  achievementList: {
-    paddingHorizontal: 16,
-    gap: 12,
-    marginBottom: 8,
-  },
-  achievementCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 3,
-    overflow: 'hidden',
-    paddingVertical: 14,
-    paddingLeft: 22,
-    paddingRight: 16,
-    gap: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    position: 'relative',
-  },
-  achievementLocked: { opacity: 0.45 },
-  achievementStripe: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    width: 4,
-  },
-  achievementSymbol: {
-    fontFamily: typography.fontFamily.mono,
-    fontSize: 28,
-    color: colors.text2,
-  },
-  achievementText: { flex: 1, gap: 2 },
-  achievementTitle: {
-    fontFamily: typography.fontFamily.bodyBold,
-    fontSize: typography.fontSize.base,
-    color: colors.text1,
-  },
-  dimText: { color: colors.text3 },
-  achievementDesc: {
+  gaugeSubtitle: {
     fontFamily: typography.fontFamily.body,
     fontSize: typography.fontSize.sm,
     color: colors.text2,
-    lineHeight: typography.fontSize.sm * typography.lineHeight.normal,
   },
-  checkmark: {
-    width: 24,
-    height: 24,
-    borderRadius: 2,
+  gaugeFraction: {
+    alignItems: 'flex-end',
+  },
+  gaugeFractionBig: {
+    fontFamily: typography.fontFamily.heading,
+    fontSize: typography.fontSize['2xl'],
+    color: colors.text1,
+  },
+  gaugeFractionDim: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.fontSize.md,
+    color: colors.text3,
+  },
+  gaugeTrack: {
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors.surface2,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  gaugeFill: {
+    height: 12,
+    borderRadius: 6,
     backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  checkmarkText: {
-    color: colors.textInverse,
-    fontSize: 12,
-    fontFamily: typography.fontFamily.bodyBold,
+  gaugePct: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.fontSize.sm,
+    color: colors.text3,
+    marginTop: 8,
+    textAlign: 'right',
+  },
+
+  // Rarity grid
+  rarityGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    paddingHorizontal: 16,
+    marginBottom: 24,
+  },
+
+  // Achievement list
+  achieveList: {
+    paddingHorizontal: 16,
+    gap: 10,
+    marginBottom: 8,
   },
 });
