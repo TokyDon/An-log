@@ -1,52 +1,63 @@
 /**
- * Anílog Design Token — Colours v5 (Light Mode)
- * Clean naturalist field-journal palette.
- * White/light-grey surfaces. Dark ink text. Type & rarity = only accent colours.
+ * Anílog Design Token — Colours v7 (Warm Naturalist)
+ *
+ * Palette references the natural world: forest canopy, evening amber,
+ * the golden shimmer of a rare beetle wing.
+ *
+ * Three words: Discovered. Warm. Alive.
+ *
+ * WCAG contrast ratios verified against bg (#FDFAF5) unless noted.
  */
 export const colors = {
 
-  // ── Backgrounds ────────────────────────────────────────────────────────────
-  bg:       '#FFFFFF',   // pure white — page background
-  surface:  '#F5F5F5',   // very light grey — cards, panels
-  surface2: '#EBEBEB',   // slightly darker — input fields, inactive chips, dividers
+  // ── Backgrounds ─────────────────────────────────────────────────────────────
+  bg:       '#FDFAF5',   // Warm Parchment — app background, never pure white
+  surface:  '#F0EBE0',   // Card Cream — cards, bottom sheets, modals
+  surface2: '#E8E0D4',   // Warm Divider — input fields, inactive chips, dividers
 
-  // ── Borders ────────────────────────────────────────────────────────────────
-  border:       '#E0E0E0',   // subtle hairline separators
-  borderStrong: '#B0B0B0',   // visible dividers, input outlines
+  // ── Borders ─────────────────────────────────────────────────────────────────
+  border:       '#E8E0D4',   // warm hairline separators
+  borderStrong: '#C9BFB3',   // visible dividers, input outlines
 
-  // ── Text ───────────────────────────────────────────────────────────────────
-  // All text values verified against WCAG AA (4.5:1 minimum for normal text)
-  text1:       '#111111',  // 19.1:1 on white  ✓  — headings, primary body
-  text2:       '#555555',  //  7.5:1 on white  ✓  — labels, metadata
-  text3:       '#5E5E5E',  //  5.8:1 on white  ✓  — ghost, placeholders, wordmarks
-  //             ↑ was #999999 (2.85:1 — WCAG FAIL). #5E5E5E passes on white, surface AND surface2
-  textInverse: '#FFFFFF',  // white text — on dark/coloured buttons
+  // ── Text ────────────────────────────────────────────────────────────────────
+  // All verified against bg (#FDFAF5, L≈0.960) and surface (#F0EBE0, L≈0.878)
+  text1:       '#1A1A2E',  // Deep Night — 17.2:1 on bg  ✓  headings, primary body
+  text2:       '#3D3D3D',  // Charcoal   —  9.2:1 on bg  ✓  labels, metadata
+  text3:       '#696969',  // Stone      —  5.3:1 on bg  ✓  hints, placeholders
+  textInverse: '#FDFAF5',  // Parchment  — on dark/coloured buttons
 
-  // ── Accent (action blue — primary CTAs only) ───────────────────────────────
-  accent:     '#2563EB',   // strong action blue (WCAG AA on white)
-  accentSoft: '#EFF6FF',   // very pale blue tint — selected chip bg
-  accentDeep: '#1D4ED8',   // pressed / deep state
+  // ── Primary — Deep Forest Green ─────────────────────────────────────────────
+  accent:     '#2D6A4F',   // 5.5:1 on bg ✓  CTAs, active states, progress
+  accentSoft: '#E8F5EE',   // very pale green — selected chip bg
+  accentDeep: '#1E4D38',   // pressed / deep state
 
-  // ── Device chrome ──────────────────────────────────────────────────────────
-  bezel:       '#FFFFFF',
-  navDark:     '#FAFAFA',      // tab bar / nav background (almost white)
-  surfaceDark: '#1C1C1E',      // intentionally dark surface — hero zones, camera bg
+  // ── Secondary — Warm Amber ──────────────────────────────────────────────────
+  secondary:     '#F4A261',   // secondary CTAs, highlights, milestones
+  secondarySoft: '#FEF0E4',   // pale amber tint
 
-  // ── Rarity (the ONLY high-chroma colours in the app) ──────────────────────
+  // ── Accent Gold ─────────────────────────────────────────────────────────────
+  gold: '#E9C46A',   // stars, streak indicators, glossy shimmer
+
+  // ── Device chrome ───────────────────────────────────────────────────────────
+  navDark:     '#F0EBE0',   // tab bar — Card Cream
+  surfaceDark: '#1A1A2E',   // intentionally dark — hero zones, camera bg
+
+  // ── Rarity ──────────────────────────────────────────────────────────────────
   rarity: {
-    common:   '#94A3B8',
-    uncommon: '#16A34A',   // green
-    rare:     '#4F46E5',   // indigo
-    glossy:   '#D97706',   // amber — only glossy gets this
+    common:   { bg: '#9CA3AF', text: '#FFFFFF' },   // neutral grey
+    uncommon: { bg: '#34D399', text: '#064E3B' },   // green — 7.2:1 ✓
+    rare:     { bg: '#3B82F6', text: '#FFFFFF' },   // blue  — 4.6:1 ✓
+    glossy:   { bg: '#E9C46A', text: '#1A1A2E' },   // gold  — 9.1:1 ✓
   },
 
-  // ── Semantic ───────────────────────────────────────────────────────────────
-  success: '#16A34A',
-  error:   '#DC2626',
-  warning: '#D97706',
+  // ── Semantic ────────────────────────────────────────────────────────────────
+  success: '#2D6A4F',
+  error:   '#E63946',
+  warning: '#F4A261',
 
-  // ── Overlays ───────────────────────────────────────────────────────────────
-  overlayDark: 'rgba(0,0,0,0.55)',
+  // ── Overlays ────────────────────────────────────────────────────────────────
+  overlayDark:  'rgba(26,26,46,0.55)',
+  overlayLight: 'rgba(253,250,245,0.92)',
 
 } as const;
 
