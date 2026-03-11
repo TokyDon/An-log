@@ -25,6 +25,7 @@ import { AnimonCard } from '../../components/ui/AnimonCard';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useCollection } from '../../features/collection/useCollection';
 import { useCollectionStore } from '../../store/collectionStore';
+import { usePartyStore } from '../../store/partyStore';
 import { ANIMON_TYPES, getTypeDefinition } from '../../constants/typeSystem';
 import type { Animon } from '../../types/animon';
 
@@ -46,24 +47,75 @@ const FILTER_OPTIONS: Array<{ key: FilterOption; label: string }> = [
 export default function AnilogScreen() {
   const { data: supabaseAnimons = [] } = useCollection();
   const localAnimons = useCollectionStore((s) => s.animons);
+  const partySlots = usePartyStore((s) => s.slots);
+  const [showAllSpecies, setShowAllSpecies] = useState(false);
 
-  // Merge: local (seeded starters + captures) + server-synced, deduped by id
-  const animons = useMemo(() => {
-    const localIds = new Set(localAnimons.map((a) => a.id));
-    return [...localAnimons, ...supabaseAnimons.filter((a) => !localIds.has(a.id))];
-  }, [localAnimons, supabaseAnimons]);
+  // Merge: party + local (seeded starters + captures) + server-synced, deduped by id
+  const allAnimons = useMemo(() => {
+    const map = new Map<string, Animon>();
+
+    // Add party animons first
+    partySlots.forEach((slot) => {
+      if (slot?.animon) {
+        map.set(slot.animon.id, slot.animon);
+      }
+    });
+
+    // Add local animons
+    localAnimons.forEach((a) => map.set(a.id, a));
+
+    // Add supabase animons (won't overwrite party/local)
+    supabaseAnimons.forEach((a) => {
+      if (!map.has(a.id)) map.set(a.id, a);
+    });
+
+    return Array.from(map.values());
+  }, [localAnimons, supabaseAnimons, partySlots]);
+
+  // Group by species and count occurrences
+  interface SpeciesGroup {
+    species: string;
+    count: number;
+    representative: Animon; // First animon of this species
+  }
+
+  const speciesGroups = useMemo(() => {
+    const groups = new Map<string, { count: number; representative: Animon }>();
+
+    allAnimons.forEach((a) => {
+      const entry = groups.get(a.species);
+      if (entry) {
+        entry.count += 1;
+      } else {
+        groups.set(a.species, { count: 1, representative: a });
+      }
+    });
+
+    return Array.from(groups.entries()).map(([species, { count, representative }]) => ({
+      species,
+      count,
+      representative,
+    }));
+  }, [allAnimons]);
 
   const [activeFilter, setActiveFilter] = useState<FilterOption>('all');
 
-  const filteredAnimons = useMemo(() => {
-    const base =
-      activeFilter === 'all'
-        ? animons
-        : animons.filter((a) => (a.types as string[]).includes(activeFilter));
-    return [...base].sort(
-      (a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime(),
+  const filteredSpeciesGroups = useMemo(() => {
+    let filtered = speciesGroups;
+
+    if (activeFilter !== 'all') {
+      filtered = speciesGroups.filter((g) =>
+        (g.representative.types as string[]).includes(activeFilter),
+      );
+    }
+
+    // Sort by most recently captured (using representative animon)
+    return [...filtered].sort(
+      (a, b) =>
+        new Date(b.representative.capturedAt).getTime() -
+        new Date(a.representative.capturedAt).getTime(),
     );
-  }, [activeFilter, animons]);
+  }, [activeFilter, speciesGroups]);
 
   function handleCardPress(animon: Animon) {
     router.push(`/animon/${animon.id}`);
@@ -74,16 +126,20 @@ export default function AnilogScreen() {
       ? ''
       : getTypeDefinition(activeFilter).label;
 
+  const totalCount = allAnimons.length;
+  const speciesCount = speciesGroups.length;
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       {/* â”€â”€ Dark header â”€â”€ */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.wordmark}>ANÍLOG</Text>
-          <Text style={styles.screenTitle}>Everything you've found.</Text>
+          <Text style={styles.wordmark}>MY COLLECTION</Text>
+          <Text style={styles.screenTitle}>Species & variants</Text>
         </View>
         <View style={styles.specimenBadge}>
-          <Text style={styles.specimenBadgeText}>{animons.length} LOGGED</Text>
+          <Text style={styles.specimenBadgeText}>{speciesCount} SPECIES</Text>
+          <Text style={styles.specimenBadgeSubtext}>{totalCount} TOTAL</Text>
         </View>
       </View>
 
@@ -129,28 +185,39 @@ export default function AnilogScreen() {
       </ScrollView>
 
       {/* â”€â”€ Grid â”€â”€ */}
-      {filteredAnimons.length === 0 ? (
+      {filteredSpeciesGroups.length === 0 ? (
         <EmptyState
-          title={animons.length === 0 ? 'Your collection is empty' : `No ${activeFilterLabel} specimens`}
+          title={speciesCount === 0 ? 'Your collection is empty' : `No ${activeFilterLabel} species`}
           description={
-            animons.length === 0
+            speciesCount === 0
               ? 'Start scanning to discover Anímons!'
               : 'Head outside and scan the next animal you find'
           }
-          ctaLabel={animons.length === 0 ? 'START SCANNING' : 'OPEN SCANNER'}
+          ctaLabel={speciesCount === 0 ? 'START SCANNING' : 'OPEN SCANNER'}
           onCta={() => router.push('/camera')}
         />
       ) : (
         <FlatList
-          data={filteredAnimons}
-          keyExtractor={(item) => item.id}
+          data={filteredSpeciesGroups}
+          keyExtractor={(item) => item.species}
           numColumns={2}
           contentContainerStyle={styles.grid}
           columnWrapperStyle={styles.row}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
             <View style={[{ width: CARD_WIDTH }, styles.cardWrapper]}>
-              <AnimonCard animon={item} onPress={handleCardPress} showPhoto />
+              <View style={styles.cardContainer}>
+                <AnimonCard
+                  animon={item.representative}
+                  onPress={() => handleCardPress(item.representative)}
+                  showPhoto
+                />
+                {item.count > 1 && (
+                  <View style={styles.countBadge}>
+                    <Text style={styles.countBadgeText}>×{item.count}</Text>
+                  </View>
+                )}
+              </View>
             </View>
           )}
         />
@@ -198,11 +265,18 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     paddingHorizontal: 8,
     paddingVertical: 4,
+    gap: 2,
   },
   specimenBadgeText: {
     fontFamily: typography.fontFamily.mono,
     fontSize: typography.fontSize.xs,
     color: colors.text2,
+    letterSpacing: typography.letterSpacing.label,
+  },
+  specimenBadgeSubtext: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: typography.fontSize.xs,
+    color: colors.text3,
     letterSpacing: typography.letterSpacing.label,
   },
 
@@ -264,6 +338,35 @@ const styles = StyleSheet.create({
     gap: COLUMN_GAP,
   },
   cardWrapper: {
-    overflow: 'hidden',
+    overflow: 'visible',
+  },
+  cardContainer: {
+    position: 'relative',
+    overflow: 'visible',
+  },
+  countBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: colors.accent,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    minWidth: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.surface,
+    elevation: 8,
+    shadowColor: colors.accent,
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  countBadgeText: {
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: typography.fontSize.xs,
+    color: colors.textInverse,
+    letterSpacing: typography.letterSpacing.label,
   },
 });

@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   },
   tier_Bronze:   { backgroundColor: '#CD7F32' },
   tier_Silver:   { backgroundColor: '#C0C0C0' },
-  tier_Gold:     { backgroundColor: colors.rarity.glossy.bg },
+  tier_Gold:     { backgroundColor: colors.rarity.super_rare.bg },
   tier_Platinum: { backgroundColor: '#E5E4E2' },
   tier_Diamond:  { backgroundColor: colors.rarity.rare.bg },
 });

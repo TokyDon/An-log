@@ -1,56 +1,58 @@
 /**
- * Anílog Design Token — Typography v4 (Warm Naturalist)
+ * Anílog Design Token — Typography v5 (Plus Jakarta Sans)
  *
- * Pairing: DM Serif Display (headings) + DM Sans (body)
- * Warm without being twee. Precise without being cold.
+ * Single family: Plus Jakarta Sans — a modern geometric humanist sans-serif
+ * optimised for digital screens and small sizes. Variable weight 200–800.
  *
- * DM Serif Display — screen titles, Animon species names, onboarding headlines
- * DM Sans         — body copy, type tags, badges, UI labels, stats, navigation
+ * Why PJS over DM Serif Display:
+ *   — Fully sans-serif for mobile clarity
+ *   — 800 ExtraBold gives strong display hierarchy without a serif
+ *   — Slightly rounded terminals feel friendly without being twee
+ *   — Excellent legibility at 12–14px for chips and labels
  *
- * Type scale base: 4px grid
+ * All font keys preserve the same names so existing code needs no changes.
  */
 export const typography = {
   fontFamily: {
-    // Heading — DM Serif Display (elegance, warmth)
-    heading: 'DMSerifDisplay_400Regular',   // only weight — elegance is restraint
+    // Display / headings — ExtraBold (replaces DM Serif Display)
+    heading: 'PlusJakartaSans_800ExtraBold',
 
-    // Body — DM Sans
-    body:         'DMSans_400Regular',
-    bodyMedium:   'DMSans_500Medium',
-    bodyBold:     'DMSans_700Bold',
+    // Body copy
+    body:         'PlusJakartaSans_400Regular',
+    bodyMedium:   'PlusJakartaSans_500Medium',
+    bodySemiBold: 'PlusJakartaSans_600SemiBold',
+    bodyBold:     'PlusJakartaSans_700Bold',
+    bodyExtra:    'PlusJakartaSans_800ExtraBold',
 
-    // Legacy aliases — keep for any existing usages that reference bodySemiBold / bodyExtra / mono
-    bodySemiBold: 'DMSans_500Medium',   // closest DM Sans equivalent
-    bodyExtra:    'DMSans_700Bold',     // map to bold
-    mono:         'DMSans_400Regular',  // no mono in new system — use body
-    monoBold:     'DMSans_700Bold',
+    // Mono aliases — PJS has no mono, use regular/bold
+    mono:     'PlusJakartaSans_400Regular',
+    monoBold: 'PlusJakartaSans_700Bold',
   },
 
   fontSize: {
-    // Notion type scale (4px base)
-    micro: 11,   // type tags only
-    xs:    12,   // labels, badges, chips
-    sm:    14,   // secondary content / body M
-    base:  16,   // primary content / body L
-    md:    18,   // section headers / title S
-    lg:    22,   // Animon species name / title M
-    xl:    28,   // screen titles / title L
-    '2xl': 32,   // reserved
-    '3xl': 40,   // onboarding hero display
+    micro: 11,   // type tags, badge counts
+    xs:    12,   // labels, chips, tab text
+    sm:    14,   // secondary body, metadata
+    base:  16,   // primary body copy
+    md:    18,   // section sub-headings
+    lg:    22,   // Animon species name in cards
+    xl:    28,   // screen titles
+    '2xl': 34,   // profile username, logbook hero count
+    '3xl': 44,   // onboarding display text
   },
 
   lineHeight: {
-    tight:  1.1,   // headings in DM Serif Display
-    normal: 1.5,   // body copy
-    label:  1.25,  // labels and chips
+    tight:  1.15,  // headings
+    normal: 1.55,  // body paragraphs
+    label:  1.25,  // chips, badges
   },
 
   letterSpacing: {
     squeezed: -0.5,
     normal:    0,
-    label:     0.5,    // +0.02em equivalent for uppercase labels
-    wide:      1.2,
-    widest:    2.0,
+    label:     0.4,   // uppercase labels
+    wide:      1.0,
+    widest:    1.8,
   },
 } as const;
 

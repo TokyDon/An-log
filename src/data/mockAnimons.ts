@@ -2,7 +2,7 @@
  * Mock Animon Data
  *
  * 12 realistic Anímon entries used across all screens for UI development.
- * Rarity distribution: 6 common, 3 uncommon, 2 rare, 1 glossy.
+ * Rarity distribution: 6 common, 3 uncommon, 2 rare, 1 super_rare.
  */
 
 import type { Animon } from '../types/animon';
@@ -176,7 +176,7 @@ export const MOCK_ANIMONS: Animon[] = [
     capturedAt: '2026-01-28T17:30:00Z',
     confidenceScore: 0.91,
   },
-  // ─── Glossy ───────────────────────────────────────────────────────────────
+  // ─── Super Rare ───────────────────────────────────────────────────────────────
   {
     id: '12',
     userId: 'user_001',
@@ -184,7 +184,7 @@ export const MOCK_ANIMONS: Animon[] = [
     breed: null,
     colour: 'Orange & Black',
     gender: 'male',
-    rarity: 'glossy',
+    rarity: 'super_rare',
     ageStage: 'adult',
     types: ['wild'],
     photoUrl: 'https://images.unsplash.com/photo-1561731216-c3a4d99437d5?w=400',
@@ -231,9 +231,9 @@ export const NEARBY_ACTIVITY = [
   },
   {
     id: 'a4',
-    message: 'A glossy Bengal Tiger was seen nearby',
+    message: 'A super rare Bengal Tiger was seen nearby',
     region: 'Tokyo, Japan',
     ago: '1d ago',
-    rarity: 'glossy' as const,
+    rarity: 'super_rare' as const,
   },
 ];

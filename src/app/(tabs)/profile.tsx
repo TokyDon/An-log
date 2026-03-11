@@ -27,7 +27,7 @@ import type { Animon, AnimonRarity } from '../../types/animon';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const ALL_RARITIES: AnimonRarity[] = ['common', 'uncommon', 'rare', 'glossy'];
+const ALL_RARITIES: AnimonRarity[] = ['common', 'uncommon', 'rare', 'super_rare'];
 
 function formatMemberSince(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', {

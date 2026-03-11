@@ -157,9 +157,8 @@ export function useCapture() {
           return;
         }
 
-        // ── Step 4: Roll glossy ──────────────────────────────────────────────
+        // ── Step 4: Roll glossy variant ─────────────────────────────────────
         const isGlossy = rollGlossy();
-        const rarity = isGlossy ? 'glossy' : speciesEntry.rarity;
 
         // ── Step 5: Location ──────────────────────────────────────────────────
         const region = await getCaptureRegion();
@@ -174,12 +173,13 @@ export function useCapture() {
           breed:           null,
           colour:          'N/A',
           gender:          'unknown',
-          rarity,
+          rarity:          speciesEntry.rarity,
           ageStage:        speciesEntry.ageStage,
           types:           speciesEntry.types as Animon['types'],
           photoUrl:        photoStoragePath,
           region,
           confidenceScore: geminiResult.confidence,
+          isGlossy,
         });
 
         addAnimon(animon);
@@ -191,12 +191,12 @@ export function useCapture() {
         const newlyUnlocked: string[] = [];
 
         const checks: Array<{ id: string; passes: boolean }> = [
-          { id: 'first_scan',   passes: total === 1 },
-          { id: 'scan_5',       passes: total === 5 },
-          { id: 'scan_10',      passes: total === 10 },
-          { id: 'scan_25',      passes: total === 25 },
-          { id: 'first_rare',   passes: animon.rarity === 'rare' },
-          { id: 'first_glossy', passes: animon.rarity === 'glossy' },
+          { id: 'first_scan',     passes: total === 1 },
+          { id: 'scan_5',         passes: total === 5 },
+          { id: 'scan_10',        passes: total === 10 },
+          { id: 'scan_25',        passes: total === 25 },
+          { id: 'first_rare',     passes: animon.rarity === 'rare' },
+          { id: 'first_super_rare', passes: animon.rarity === 'super_rare' },
         ];
 
         for (const c of checks) {

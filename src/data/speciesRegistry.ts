@@ -14,7 +14,7 @@
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type AgeStage = 'juvenile' | 'adult';
-export type AnimonRarity = 'common' | 'uncommon' | 'rare' | 'glossy';
+export type AnimonRarity = 'common' | 'uncommon' | 'rare' | 'super_rare';
 
 export interface SpeciesEntry {
   /** Unique entry key, e.g. 'european_robin_adult' */

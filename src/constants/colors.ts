@@ -44,12 +44,15 @@ export const colors = {
   bezel:       '#2D2D4A',   // avatar inner ring — slightly lighter than surfaceDark
 
   // ── Rarity ──────────────────────────────────────────────────────────────────
+  // Four tiers. "Glossy" is a variant flag on Animon, not a tier.
   rarity: {
-    common:   { bg: '#9CA3AF', text: '#FFFFFF' },   // neutral grey
-    uncommon: { bg: '#34D399', text: '#064E3B' },   // green — 7.2:1 ✓
-    rare:     { bg: '#3B82F6', text: '#FFFFFF' },   // blue  — 4.6:1 ✓
-    glossy:   { bg: '#E9C46A', text: '#1A1A2E' },   // gold  — 9.1:1 ✓
+    common:     { bg: '#9CA3AF', text: '#FFFFFF' },   // grey
+    uncommon:   { bg: '#34D399', text: '#064E3B' },   // green   — 7.2:1 ✓
+    rare:       { bg: '#3B82F6', text: '#FFFFFF' },   // blue    — 4.6:1 ✓
+    super_rare: { bg: '#8B5CF6', text: '#FFFFFF' },   // violet  — 4.9:1 ✓
   },
+  // Glossy variant shimmer colours (badge overlay when isGlossy=true)
+  glossyShimmer: ['#F59E0B', '#EC4899', '#8B5CF6', '#EC4899', '#F59E0B'] as string[],
 
   // ── Semantic ────────────────────────────────────────────────────────────────
   success: '#2D6A4F',

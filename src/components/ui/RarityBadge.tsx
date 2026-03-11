@@ -1,9 +1,11 @@
-﻿/**
- * RarityBadge — v3 Clean Modern
+/**
+ * RarityBadge — v4
  *
- * Dot + label pill. 5px dot + uppercase label in rarity colour.
- * Soft tint background (rarity colour at 12% opacity). Fully rounded.
- * Glossy: pulsing dot + animated colour cycle (amber → pink → indigo).
+ * Dot + label pill for four rarity tiers: Common, Uncommon, Rare, Super Rare.
+ * Optional isGlossy flag adds an animated shimmer — a glossy can be any rarity.
+ *
+ * isGlossy=true: dot pulses through amber → pink → violet cycle.
+ * Super Rare: violet, static.
  */
 
 import React, { useEffect } from 'react';
@@ -21,17 +23,17 @@ import { typography } from '../../constants/typography';
 import type { AnimonRarity } from '../../types/animon';
 
 const RARITY_LABELS: Record<AnimonRarity, string> = {
-  common:   'COMMON',
-  uncommon: 'UNCOMMON',
-  rare:     'RARE',
-  glossy:   'GLOSSY ✦',
+  common:     'COMMON',
+  uncommon:   'UNCOMMON',
+  rare:       'RARE',
+  super_rare: 'SUPER RARE',
 };
 
 interface RarityBadgeProps {
   rarity: AnimonRarity;
+  isGlossy?: boolean;
 }
 
-/** Convert 6-digit hex to rgba string */
 function hexToRgba(hex: string, alpha: number): string {
   const h = hex.replace('#', '');
   const r = parseInt(h.substring(0, 2), 16);
@@ -40,14 +42,13 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-// Glossy animates through amber → pink → indigo
-const GLOSSY_COLORS = ['#F59E0B', '#EC4899', '#6366F1', '#EC4899', '#F59E0B'];
+const SHIMMER = colors.glossyShimmer;
 
-export function RarityBadge({ rarity }: RarityBadgeProps) {
+export function RarityBadge({ rarity, isGlossy = false }: RarityBadgeProps) {
   const progress = useSharedValue(0);
 
   useEffect(() => {
-    if (rarity === 'glossy') {
+    if (isGlossy) {
       progress.value = withRepeat(
         withSequence(
           withTiming(1, { duration: 1200 }),
@@ -56,50 +57,53 @@ export function RarityBadge({ rarity }: RarityBadgeProps) {
         -1,
         false,
       );
+    } else {
+      progress.value = 0;
     }
-  }, [rarity, progress]);
+  }, [isGlossy, progress]);
 
   const dotStyle = useAnimatedStyle(() => {
-    if (rarity !== 'glossy') return {};
+    if (!isGlossy) return {};
     return {
       backgroundColor: interpolateColor(
         progress.value,
         [0, 0.33, 0.66, 1],
-        ['#F59E0B', '#EC4899', '#6366F1', '#F59E0B'],
+        [SHIMMER[0], SHIMMER[1], SHIMMER[2], SHIMMER[0]],
       ),
     };
   });
 
   const textStyle = useAnimatedStyle(() => {
-    if (rarity !== 'glossy') return {};
+    if (!isGlossy) return {};
     return {
       color: interpolateColor(
         progress.value,
         [0, 0.33, 0.66, 1],
-        ['#F59E0B', '#EC4899', '#6366F1', '#F59E0B'],
+        [SHIMMER[0], SHIMMER[1], SHIMMER[2], SHIMMER[0]],
       ),
     };
   });
 
-  const rarityDef = colors.rarity[rarity];
+  const rarityDef  = colors.rarity[rarity];
   const rarityColor = rarityDef.bg;
-  const bgColor = hexToRgba(rarityColor, 0.12);
+  const bgColor     = hexToRgba(rarityColor, 0.12);
 
   return (
     <View style={[styles.pill, { backgroundColor: bgColor }]}>
       <Animated.View
         style={[
           styles.dot,
-          rarity === 'glossy' ? dotStyle : { backgroundColor: rarityColor },
+          isGlossy ? dotStyle : { backgroundColor: rarityColor },
         ]}
       />
       <Animated.Text
         style={[
           styles.label,
-          rarity === 'glossy' ? textStyle : { color: rarityColor },
+          isGlossy ? textStyle : { color: rarityColor },
         ]}
       >
         {RARITY_LABELS[rarity]}
+        {isGlossy ? ' ✦' : ''}
       </Animated.Text>
     </View>
   );
@@ -110,7 +114,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 7,
+    paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 99,
   },
@@ -120,8 +124,8 @@ const styles = StyleSheet.create({
     borderRadius: 99,
   },
   label: {
-    fontFamily: typography.fontFamily.monoBold,
-    fontSize: 8,
-    letterSpacing: typography.letterSpacing.wide,
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: typography.fontSize.micro,
+    letterSpacing: typography.letterSpacing.label,
   },
 });

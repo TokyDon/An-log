@@ -1,8 +1,7 @@
 ﻿/**
  * Anilog Root Layout
  *
- * Sets up fonts, React Query provider, and root navigation.
- * v4: DM Serif Display + DM Sans — Naturalist edition.
+ * v5: Plus Jakarta Sans — single clean sans-serif family.
  */
 
 import { useEffect } from 'react';
@@ -14,13 +13,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { supabase } from '../services/supabase/client';
 import {
   useFonts,
-  DMSerifDisplay_400Regular,
-} from '@expo-google-fonts/dm-serif-display';
-import {
-  DMSans_400Regular,
-  DMSans_500Medium,
-  DMSans_700Bold,
-} from '@expo-google-fonts/dm-sans';
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from '@expo-google-fonts/plus-jakarta-sans';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import '../../global.css';
@@ -38,10 +36,11 @@ const queryClient = new QueryClient({
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    DMSerifDisplay_400Regular,
-    DMSans_400Regular,
-    DMSans_500Medium,
-    DMSans_700Bold,
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
   });
 
   useEffect(() => {

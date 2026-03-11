@@ -1,16 +1,18 @@
 /**
- * TabBar — v4 Accessible + Flutter-style
+ * TabBar — v5 Accessible
  *
- * Accessibility:
- *   - Each tab touch target ≥ 44×44pt (WCAG 2.5.5)
- *   - Tab labels 11px (above mobile minimum of 11sp)
- *   - Active state communicated via color + weight (not color alone)
- *   - accessibilityRole and accessibilityState on every item
+ * Unicode symbols chosen for cross-platform consistency.
+ * @expo/vector-icons not yet installed — add with: npx expo install @expo/vector-icons
+ * then swap Text icons for <Ionicons> components.
  *
- * Visual:
- *   - Pill highlight behind active icon
- *   - FAB 58px circle lifted 22px, stronger type-color shadow
- *   - Clean surface background with 1px top border
+ * Icons (unicode):
+ *   Party:      ♥  U+2665  BLACK HEART SUIT
+ *   Collection: ⊞  U+229E  SQUARED PLUS (grid feel)
+ *   Stamps:     ✦  U+2726  BLACK FOUR POINTED STAR
+ *   Profile:    ◉  U+25C9  FISHEYE (person dot feel)
+ *   FAB (scan): ⊕  U+2295  CIRCLED PLUS
+ *
+ * Accessibility: 44pt touch targets, accessibilityRole + accessibilityState.
  */
 
 import React from 'react';
@@ -23,10 +25,10 @@ import { colors } from '../../constants/colors';
 import { typography } from '../../constants/typography';
 
 const TAB_CONFIG: Record<string, { icon: string; label: string }> = {
-  index:   { icon: '★',  label: 'Party'      },
-  anilog:  { icon: '◈',  label: 'Animons'    },
-  logbook: { icon: '◎',  label: 'Stamps'     },
-  profile: { icon: '◐',  label: 'Profile'    },
+  index:   { icon: '♥',  label: 'Party'      },
+  anilog:  { icon: '⊞',  label: 'Collection' },
+  logbook: { icon: '✦',  label: 'Stamps'     },
+  profile: { icon: '◉',  label: 'Profile'    },
 };
 
 const FAB_SIZE = 58;
@@ -44,21 +46,19 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
     >
       <View style={styles.topBorder} />
 
-      {/* Left: Party */}
       <TabItem
         routeName="index"
         isFocused={focusedRouteName === 'index'}
         onPress={() => navigation.navigate('index')}
       />
 
-      {/* Centre-left: Collection */}
       <TabItem
         routeName="anilog"
         isFocused={focusedRouteName === 'anilog'}
         onPress={() => navigation.navigate('anilog')}
       />
 
-      {/* Centre FAB */}
+      {/* Centre FAB — scanner */}
       <View style={styles.fabWrap}>
         <TouchableOpacity
           style={styles.fabButton}
@@ -74,19 +74,18 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
             end={{ x: 0, y: 1 }}
             style={StyleSheet.absoluteFill}
           />
+          {/* ⌖ = TARGET / CROSSHAIR — feels like a scanner reticle */}
           <Text style={styles.fabIcon}>⌖</Text>
         </TouchableOpacity>
         <Text style={styles.fabLabel}>SCAN</Text>
       </View>
 
-      {/* Centre-right: Stamps */}
       <TabItem
         routeName="logbook"
         isFocused={focusedRouteName === 'logbook'}
         onPress={() => navigation.navigate('logbook')}
       />
 
-      {/* Right: Profile */}
       <TabItem
         routeName="profile"
         isFocused={focusedRouteName === 'profile'}
@@ -115,24 +114,12 @@ function TabItem({ routeName, isFocused, onPress }: TabItemProps) {
       accessibilityState={{ selected: isFocused }}
       accessibilityLabel={config.label}
     >
-      {/* Pill highlight behind icon when active */}
       <View style={[styles.iconPill, isFocused && styles.iconPillActive]}>
-        <Text
-          style={[
-            styles.tabIcon,
-            isFocused ? styles.iconActive : styles.iconInactive,
-          ]}
-        >
+        <Text style={[styles.tabIcon, { color: isFocused ? colors.accent : colors.text3 }]}>
           {config.icon}
         </Text>
       </View>
-
-      <Text
-        style={[
-          styles.tabLabel,
-          isFocused ? styles.labelActive : styles.labelInactive,
-        ]}
-      >
+      <Text style={[styles.tabLabel, isFocused ? styles.labelActive : styles.labelInactive]}>
         {config.label}
       </Text>
     </TouchableOpacity>
@@ -145,7 +132,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingTop: 6,
-    position: 'relative',
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
@@ -156,45 +142,39 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
   },
 
-  // Tab item — min 44pt touch target
+  // Tab — 44pt minimum touch target
   tab: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: 6,
     gap: 3,
     minHeight: 44,
-    justifyContent: 'flex-start',
   },
-
-  // Icon pill
   iconPill: {
     width: 44,
-    height: 28,
-    borderRadius: 14,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconPillActive: {
     backgroundColor: colors.accentSoft,
   },
-
-  tabIcon: { fontSize: 18 },
-  iconActive:   { color: colors.accent },
-  iconInactive: { color: colors.text3  },
-
+  tabIcon: {
+    fontSize: 22,
+  },
   tabLabel: {
     fontFamily: typography.fontFamily.bodyBold,
     fontSize: 11,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   labelActive:   { color: colors.accent },
   labelInactive: { color: colors.text3  },
 
-  // FAB
+  // Centre FAB
   fabWrap: {
     width: 72,
     alignItems: 'center',
-    paddingTop: 0,
     gap: 3,
   },
   fabButton: {
@@ -214,9 +194,8 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
   },
   fabIcon: {
-    fontSize: 24,
-    color: colors.textInverse,
-    lineHeight: 28,
+    fontSize: 28,
+    color: colors.bg,
   },
   fabLabel: {
     fontFamily: typography.fontFamily.bodyBold,

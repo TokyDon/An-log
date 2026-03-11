@@ -49,12 +49,6 @@ function genderLabel(g: string): string {
   return g.charAt(0).toUpperCase() + g.slice(1);
 }
 
-function accessionNumber(id: string): string {
-  const n = parseInt(id, 10);
-  if (!isNaN(n)) return `#${String(n).padStart(3, '0')}`;
-  return `#${id.slice(-3).padStart(3, '0')}`;
-}
-
 export default function AnimonDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const animons = useCollectionStore((s) => s.animons);
@@ -105,17 +99,11 @@ export default function AnimonDetailScreen() {
           style={styles.heroGradient}
         />
 
-        {/* Species name + breed */}
+        {/* Species name */}
         <View style={styles.heroNameWrap}>
-          <Text style={[styles.heroAccession, { color: textAlpha }]}>
-            {accessionNumber(animon.id)}
-          </Text>
           <Text style={[styles.heroSpecies, { color: typeTextColor }]} numberOfLines={2}>
             {animon.species}
           </Text>
-          {animon.breed && (
-            <Text style={[styles.heroBreed, { color: textAlpha }]}>{animon.breed}</Text>
-          )}
         </View>
       </View>
 
@@ -290,23 +278,11 @@ const styles = StyleSheet.create({
   heroNameWrap: {
     position: 'absolute',
     bottom: 24, left: 20, right: 20,
-    gap: 2,
-  },
-  heroAccession: {
-    fontFamily: typography.fontFamily.bodyBold,
-    fontSize: typography.fontSize.xs,
-    letterSpacing: typography.letterSpacing.widest,
-    marginBottom: 4,
   },
   heroSpecies: {
     fontFamily: typography.fontFamily.heading,
     fontSize: typography.fontSize['2xl'],
     lineHeight: typography.fontSize['2xl'] * typography.lineHeight.tight,
-  },
-  heroBreed: {
-    fontFamily: typography.fontFamily.body,
-    fontSize: typography.fontSize.sm,
-    marginTop: 2,
   },
 
   // Back button

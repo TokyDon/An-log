@@ -341,10 +341,10 @@ export default function MilestonesScreen() {
   const progressPct   = Math.min(uniqueSpecies / TOTAL_SPECIES_TARGET, 1);
 
   const rarityRows: Array<{ rarity: AnimonRarity; label: string; target: number }> = [
-    { rarity: 'common',   label: 'Common',   target: 20 },
-    { rarity: 'uncommon', label: 'Uncommon', target: 10 },
-    { rarity: 'rare',     label: 'Rare',     target: 5  },
-    { rarity: 'glossy',   label: 'Glossy',   target: 1  },
+    { rarity: 'common',     label: 'Common',     target: 20 },
+    { rarity: 'uncommon',   label: 'Uncommon',   target: 10 },
+    { rarity: 'rare',       label: 'Rare',       target: 5  },
+    { rarity: 'super_rare', label: 'Super Rare', target: 1  },
   ];
 
   const achievements = ACHIEVEMENTS.map((a) => ({

@@ -7,7 +7,12 @@
 
 import type { AnimonTypeName } from '../constants/typeSystem';
 
-export type AnimonRarity = 'common' | 'uncommon' | 'rare' | 'glossy';
+/**
+ * Rarity tiers — four levels of capture rarity.
+ * "Glossy" is NOT a rarity level — it is a rare colour-variant flag
+ * (isGlossy: boolean) that can apply to any rarity, like a shiny in Pokémon.
+ */
+export type AnimonRarity = 'common' | 'uncommon' | 'rare' | 'super_rare';
 export type AgeStage = 'juvenile' | 'adult';
 
 /** Re-export for convenience */
@@ -89,6 +94,11 @@ export interface Animon {
   region: string;
   capturedAt: string; // ISO 8601
   confidenceScore: number;
+  /**
+   * True if this is a glossy (colour-variant) specimen.
+   * A glossy can be of any rarity — common, uncommon, rare, or super_rare.
+   */
+  isGlossy?: boolean;
 }
 
 // ─── Scan Result ─────────────────────────────────────────────────────────────
