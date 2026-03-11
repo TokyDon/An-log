@@ -34,3 +34,11 @@ export function onAuthStateChange(
 ) {
   return supabase.auth.onAuthStateChange(callback);
 }
+
+export async function resendVerificationEmail(email: string) {
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email,
+  });
+  if (error) throw error;
+}
