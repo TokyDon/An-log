@@ -35,6 +35,7 @@ import { TypeTagChip } from '../components/ui/TypeTagChip';
 import { AchievementUnlockToast } from '../components/ui/AchievementUnlockToast';
 import { useCapture } from '../features/capture/useCapture';
 import { getScanCount } from '../services/supabase/scans';
+import { resendVerificationEmail } from '../services/supabase/auth';
 import { useAuthStore } from '../store/authStore';
 import { SPECIES_REGISTRY } from '../data/speciesRegistry';
 import type { SpeciesEntry } from '../data/speciesRegistry';
@@ -83,6 +84,8 @@ export default function CameraScreen() {
   const [scansUsed, setScansUsed] = useState(0);
   const [illustrationUrl, setIllustrationUrl] = useState<string | null>(null);
   const [speciesEntry, setSpeciesEntry] = useState<SpeciesEntry | null>(null);
+  const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [resendError, setResendError] = useState<string | null>(null);
 
   const cameraRef = useRef<CameraView>(null);
   /** Mirrors captureState synchronously for use inside async interval callbacks. */
@@ -353,6 +356,57 @@ export default function CameraScreen() {
   }
 
   // â”€â”€ Permission gates â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Email verification gate ────────────────────────────────────────────────
+  if (user && !user.emailConfirmed) {
+    async function handleResend() {
+      setResendState('sending');
+      setResendError(null);
+      try {
+        await resendVerificationEmail(user!.username);
+        setResendState('sent');
+      } catch (e: unknown) {
+        setResendState('error');
+        setResendError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+      }
+    }
+
+    return (
+      <View style={styles.emailGateContainer}>
+        <StatusBar barStyle="dark-content" />
+        <TouchableOpacity style={styles.emailGateBack} onPress={() => router.back()}>
+          <Text style={styles.emailGateBackText}>← Back</Text>
+        </TouchableOpacity>
+        <View style={styles.emailGateContent}>
+          <Text style={styles.emailGateIcon}>📧</Text>
+          <Text style={styles.emailGateHeadline}>Verify your email</Text>
+          <Text style={styles.emailGateBody}>
+            Check your inbox and click the verification link to start scanning.
+          </Text>
+          <Text style={styles.emailGateEmail}>{user.username}</Text>
+          <TouchableOpacity
+            style={[
+              styles.emailGateResendBtn,
+              resendState === 'sending' && styles.emailGateResendBtnDisabled,
+              resendState === 'sent' && styles.emailGateResendBtnSent,
+            ]}
+            onPress={handleResend}
+            disabled={resendState === 'sending' || resendState === 'sent'}
+          >
+            <Text style={styles.emailGateResendBtnText}>
+              {resendState === 'sending' ? 'Sending…' : resendState === 'sent' ? 'Sent! ✓' : 'Resend email'}
+            </Text>
+          </TouchableOpacity>
+          {resendState === 'error' && resendError !== null && (
+            <Text style={styles.emailGateResendError}>{resendError}</Text>
+          )}
+          <Text style={styles.emailGateHint}>
+            Email not verified? Try signing out and back in.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   if (!permission) return <View style={styles.container} />;
 
   if (!permission.granted) {
@@ -1007,4 +1061,94 @@ const styles = StyleSheet.create({
     color: colors.textInverse,
     letterSpacing: 1,
   },
+
+  // ── Email verification gate ────────────────────────────────────────────────
+  emailGateContainer: {
+    flex: 1,
+    backgroundColor: colors.bg,
+    paddingHorizontal: 16,
+    paddingTop: 56,
+  },
+  emailGateBack: {
+    alignSelf: 'flex-start',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    marginBottom: 8,
+  },
+  emailGateBackText: {
+    fontFamily: typography.fontFamily.bodyMedium,
+    fontSize: typography.fontSize.base,
+    color: colors.accent,
+  },
+  emailGateContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 60,
+  },
+  emailGateIcon: {
+    fontSize: 56,
+    marginBottom: 8,
+  },
+  emailGateHeadline: {
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: typography.fontSize['2xl'],
+    color: colors.text1,
+    textAlign: 'center',
+  },
+  emailGateBody: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.fontSize.base,
+    color: colors.text2,
+    textAlign: 'center',
+    lineHeight: typography.fontSize.base * typography.lineHeight.normal,
+    marginTop: 4,
+  },
+  emailGateEmail: {
+    fontFamily: typography.fontFamily.bodyMedium,
+    fontSize: typography.fontSize.sm,
+    color: colors.text2,
+    textAlign: 'center',
+  },
+  emailGateResendBtn: {
+    marginTop: 8,
+    width: '100%',
+    backgroundColor: colors.accent,
+    borderRadius: 14,
+    paddingVertical: 16,
+    minHeight: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  emailGateResendBtnDisabled: {
+    backgroundColor: colors.surface2,
+    borderColor: colors.border,
+  },
+  emailGateResendBtnSent: {
+    backgroundColor: colors.success,
+    borderColor: colors.success,
+  },
+  emailGateResendBtnText: {
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: typography.fontSize.base,
+    color: colors.textInverse,
+  },
+  emailGateResendError: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.fontSize.sm,
+    color: colors.error,
+    textAlign: 'center',
+  },
+  emailGateHint: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.fontSize.xs,
+    color: colors.text3,
+    textAlign: 'center',
+    marginTop: 16,
+  },
 });
+
